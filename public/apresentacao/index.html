@@ -23,8 +23,8 @@ button { font: inherit; cursor: pointer; border: 0; background: none; color: inh
 .num { font-variant-numeric: tabular-nums; }
 
 /* palco 16:9 escalado para caber em qualquer tela */
-#viewport { position: fixed; inset: 0; display: grid; place-items: center; }
-#stage { position: relative; width: 1600px; height: 900px; transform-origin: center center; overflow: hidden; border-radius: 6px; box-shadow: 0 40px 120px rgba(0,0,0,.5); }
+#viewport { position: fixed; inset: 0; overflow: hidden; }
+#stage { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; transform-origin: center center; overflow: hidden; border-radius: 6px; box-shadow: 0 40px 120px rgba(0,0,0,.5); }
 .slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1), visibility 0s .7s; transform: translateX(40px) scale(.985); }
 .slide.prev { transform: translateX(-40px) scale(.985); }
 .slide.on { opacity: 1; visibility: visible; transform: none; transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1), visibility 0s; z-index: 2; }
@@ -248,6 +248,9 @@ table.mini td:last-child { text-align: right; font-weight: 600; }
 #progress { position: fixed; left: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--blue), var(--gold)); transition: width .6s cubic-bezier(.2,.7,.2,1); z-index: 11; }
 #help { position: fixed; top: 14px; right: 16px; color: rgba(255,255,255,.4); font-size: 12px; z-index: 10; }
 @media (max-width: 700px) { #help, #dots { display: none; } #ui { justify-content: center; } }
+#rotate { display: none; position: fixed; top: calc(16px + env(safe-area-inset-top)); left: 16px; right: 16px; z-index: 12; text-align: center; color: rgba(255,255,255,.85); font: 500 14px/1.4 var(--text); }
+#rotate b { color: var(--gold); }
+@media (orientation: portrait) and (max-width: 700px) { #rotate { display: block; } }
 </style>
 </head>
 <body>
@@ -288,6 +291,7 @@ table.mini td:last-child { text-align: right; font-weight: 600; }
 </svg>
 
 <div id="progress"></div>
+<div id="rotate">↻ <b>Gire o celular</b> para ver a apresentação em tela cheia</div>
 <div id="help">← → ou espaço para navegar · F tela cheia</div>
 <div id="viewport"><div id="stage" role="region" aria-roledescription="apresentação" aria-label="Monte Trip 2028">
 
@@ -563,7 +567,7 @@ table.mini td:last-child { text-align: right; font-weight: 600; }
   // escala o palco 1600×900 para caber na janela, mantendo 16:9
   const fit = () => {
     const s = Math.min(innerWidth / 1600, innerHeight / 900)
-    stage.style.transform = `scale(${s})`
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`
   }
   addEventListener('resize', fit); fit()
 
