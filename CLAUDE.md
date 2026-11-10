@@ -89,6 +89,9 @@ mensalidades (parcelas, parcial, atraso, distribuição, estorno), arrecadaçõe
 documentos no Storage, agências com comparação, prestação de contas (CSV/PDF), importação de alunos e backup.
 Testes: 101 unitários, 119 de banco, 55 de ponta a ponta (rodado antes da mudança do professor; refazer). Detalhes: docs/PROGRESSO.md.
 Publicação e configuração do Supabase: docs/PUBLICAR.md. Backup: docs/BACKUP.md.
+Apresentação institucional (8 slides, HTML puro): public/apresentacao/index.html → publicada em `/apresentacao/`.
+Telas em public/apresentacao/img são capturas reais com dados fictícios (ambiente scripts/e2e); foto da capa
+opcional em public/apresentacao/img/destino.jpg (sem ela, usa a ilustração em SVG).
 Sem `.env.local` o site roda em modo demonstração (`src/data/supabase.ts` → cliente null).
 
 ## Publicação
