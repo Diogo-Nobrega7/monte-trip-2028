@@ -78,6 +78,8 @@ Publicação e configuração do Supabase: docs/PUBLICAR.md.
 Sem `.env.local` o site roda em modo demonstração (`src/data/supabase.ts` → cliente null).
 
 ## Publicação
+- No ar: https://diogo-nobrega7.github.io/monte-trip-2028/ (repo Diogo-Nobrega7/monte-trip-2028).
+  Supabase: projeto `qhfwefqtgcuulukefvtk`, região São Paulo. Admin: Davi.
 - GitHub Pages via `.github/workflows/deploy.yml` (push na main). Variáveis do repo: `VITE_SUPABASE_URL`,
   `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - Site público mostra só `resumo_publico()` (totais). Alunos e pagamentos: só admin/supervisor (RLS).
