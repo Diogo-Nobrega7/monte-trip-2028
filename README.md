@@ -2,6 +2,8 @@
 
 Gestão da viagem de formatura do 3º ano do Colégio Monte.
 
+Site: https://diogo-nobrega7.github.io/monte-trip-2028/ (login da administração em `#entrar`)
+
 ```
 npm install
 npm run dev
