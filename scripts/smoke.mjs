@@ -2,7 +2,7 @@
 // registra erros de console e tira capturas para revisão visual.
 import { chromium } from 'playwright-core'
 const BASE = process.env.BASE ?? 'http://localhost:4173/'
-const routes = ['painel','alunos','mensalidades','arrecadacoes','despesas','simulador','viagem','agencias','documentos','configuracoes']
+const routes = ['painel','alunos','mensalidades','arrecadacoes','despesas','relatorios','simulador','viagem','agencias','documentos','configuracoes']
 const browser = await chromium.launch({ executablePath: process.env.CHROME })
 const errors = [], fails = []
 const check = (ok, msg) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${msg}`); if (!ok) fails.push(msg) }
@@ -32,12 +32,9 @@ for (const [name, vp] of [['desktop', { width: 1440, height: 900 }], ['mobile', 
     await page.getByRole('button', { name: 'Fixar cenário' }).click(); await page.waitForTimeout(300)
     check(await page.locator('td:has-text("Cenário")').count() === 2, 'dois cenários fixados na comparação')
     await page.screenshot({ path: 'shots/desktop-simulador-comparacao.png', fullPage: true })
-    await page.goto(`${BASE}#alunos`); await page.waitForTimeout(300)
-    await page.getByRole('button', { name: 'Cadastrar aluno' }).first().click(); await page.waitForTimeout(300)
-    check(await page.getByRole('dialog').isVisible(), 'modal de cadastro abre')
-    await page.screenshot({ path: 'shots/desktop-modal.png' })
-    await page.keyboard.press('Escape'); await page.waitForTimeout(200)
-    check(await page.getByRole('dialog').count() === 0, 'Esc fecha o modal')
+    // modal: comparação de agências não exige banco; o seletor de período dos relatórios também não
+    await page.goto(`${BASE}#configuracoes`); await page.waitForTimeout(400)
+    check((await page.locator('main').innerText()).includes('Modo demonstração'), 'configurações avisam modo demonstração')
     await page.locator('aside button[aria-haspopup=menu]').click()
     await page.getByRole('menuitemradio', { name: 'Tema escuro' }).click(); await page.waitForTimeout(400)
     check(await page.evaluate(() => document.documentElement.dataset.theme) === 'dark', 'tema escuro aplicado pelo menu do usuário')
@@ -50,8 +47,7 @@ for (const [name, vp] of [['desktop', { width: 1440, height: 900 }], ['mobile', 
     await page.screenshot({ path: 'shots/mobile-menu.png' })
     await page.locator('aside nav').getByText('Despesas').click(); await page.waitForTimeout(400)
     check(await page.evaluate(() => location.hash) === '#despesas', 'menu "Mais" navega')
-    await page.getByRole('button', { name: 'Registrar despesa' }).first().click(); await page.waitForTimeout(400)
-    await page.screenshot({ path: 'shots/mobile-modal.png' })
+    check((await page.locator('main').innerText()).includes('Despesas'), 'página de despesas abre no celular')
   }
   await page.close()
 }

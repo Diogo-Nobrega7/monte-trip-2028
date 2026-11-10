@@ -2,7 +2,7 @@ import { BedDouble, Bus, CalendarDays, MapPin, Plane, ShieldCheck, Ticket, Users
 import { useSettings } from '@/app/SettingsContext'
 import { moneyShort } from '@/lib/format'
 import { Badge, Card, CardHeader, PageHeader, StageNotice } from '@/components/ui'
-import { STAGE2 } from '../stage'
+import { dateBR } from '@/data/useRemote'
 
 const SERVICES = [
   { icon: Bus, name: 'Transporte', detail: 'Ida e volta a partir de Natal' },
@@ -28,7 +28,7 @@ export function TripPage() {
   return (
     <>
       <PageHeader icon={Plane} section="Organização" title="Viagem" description="O que está planejado. Tudo aqui é provisório até a contratação da agência." />
-      <StageNotice>{STAGE2}</StageNotice>
+      <StageNotice>Destino, datas e número de participantes são editados em Configurações (com histórico). Preços e serviços de cada agência ficam em Agências.</StageNotice>
       <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
         <Card className="overflow-hidden">
           <div className="relative p-6 sm:p-7 bg-[linear-gradient(135deg,rgb(var(--accent)/.10),transparent_60%)]">
@@ -36,9 +36,9 @@ export function TripPage() {
               <div>
                 <p className="flex items-center gap-1.5 text-[13px] text-muted"><MapPin size={14} aria-hidden />{s.destinationCity}</p>
                 <p className="font-display text-[32px] leading-tight font-bold tracking-[-0.025em] mt-1">{s.destination}</p>
-                <p className="text-sm text-muted mt-1">Saída de {s.origin}. Datas ainda não definidas.</p>
+                <p className="text-sm text-muted mt-1">Saída de {s.origin}. {s.tripStart ? `Ida em ${dateBR(s.tripStart)}${s.tripEnd ? `, volta em ${dateBR(s.tripEnd)}` : ''}.` : 'Datas ainda não definidas.'}</p>
               </div>
-              <Badge tone="gold">Provisório</Badge>
+              {s.provisional ? <Badge tone="gold">Provisório</Badge> : <Badge tone="ok" dot>Regras aprovadas</Badge>}
             </div>
           </div>
           <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-line [&>div]:p-5 [&>div]:border-line [&>div:nth-child(odd)]:border-r sm:[&>div]:border-r sm:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b sm:[&>div]:border-b-0">
@@ -48,7 +48,7 @@ export function TripPage() {
           </dl>
         </Card>
         <Card>
-          <CardHeader title="Serviços desejados" hint="Cada item será cotado com as agências" />
+          <CardHeader title="Serviços desejados" hint="Cada item é cotado e comparado em Agências" />
           <ul className="px-5 pb-4">
             {SERVICES.map((x) => (
               <li key={x.name} className="flex items-center gap-3.5 py-2.5 border-b border-line/70 last:border-0">

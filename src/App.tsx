@@ -15,6 +15,7 @@ import { TripPage } from '@/features/trip/TripPage'
 import { AgenciesPage } from '@/features/agencies/AgenciesPage'
 import { DocumentsPage } from '@/features/documents/DocumentsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { ReportsPage } from '@/features/reports/ReportsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AuthProvider } from '@/data/auth'
 
@@ -33,6 +34,7 @@ export default function App() {
     mensalidades: <InstallmentsPage />,
     arrecadacoes: <FundraisingPage />,
     despesas: <ExpensesPage />,
+    relatorios: <ReportsPage />,
     simulador: <SimulatorPage />,
     viagem: <TripPage />,
     agencias: <AgenciesPage />,

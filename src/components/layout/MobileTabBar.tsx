@@ -4,7 +4,7 @@ import { cx } from '@/components/ui'
 
 const TABS: { id: RouteId; label: string; icon: typeof Menu }[] = [
   { id: 'painel', label: 'Painel', icon: LayoutDashboard },
-  { id: 'mensalidades', label: 'Pagamentos', icon: CalendarClock },
+  { id: 'mensalidades', label: 'Parcelas', icon: CalendarClock },
   { id: 'alunos', label: 'Alunos', icon: Users },
   { id: 'simulador', label: 'Simular', icon: Calculator },
 ]

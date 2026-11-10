@@ -35,7 +35,7 @@ export function LoginPage({ onNavigate }: { onNavigate: (r: RouteId) => void }) 
             <p className="text-sm">Você entrou como <strong>{name ?? session.user.email}</strong>.</p>
             {!role && <p className="text-sm text-warn">Esta conta ainda não tem papel definido, então não consegue registrar nada. Peça para incluir o perfil no banco.</p>}
             <div className="flex gap-2">
-              <Button variant="primary" onClick={() => onNavigate('mensalidades')}>Ir para pagamentos</Button>
+              <Button variant="primary" onClick={() => onNavigate('mensalidades')}>Ir para mensalidades</Button>
               <Button variant="ghost" icon={LogOut} onClick={() => void signOut()}>Sair</Button>
             </div>
           </div>

@@ -1,12 +1,12 @@
 import {
   LayoutDashboard, Users, CalendarClock, HandCoins, Receipt, Calculator,
-  Plane, Building2, FileText, Settings, LogIn, type LucideIcon,
+  Plane, Building2, FileText, Settings, LogIn, FileBarChart, type LucideIcon,
 } from 'lucide-react'
 
 /** Rotas por hash simples (#alunos). Nomes em ASCII, sem barras. */
 export type RouteId =
   | 'painel' | 'alunos' | 'mensalidades' | 'arrecadacoes' | 'despesas'
-  | 'simulador' | 'viagem' | 'agencias' | 'documentos' | 'configuracoes' | 'entrar'
+  | 'relatorios' | 'simulador' | 'viagem' | 'agencias' | 'documentos' | 'configuracoes' | 'entrar'
 
 export interface RouteDef {
   id: RouteId
@@ -20,10 +20,10 @@ export interface RouteDef {
 
 export const ROUTES: RouteDef[] = [
   { id: 'painel', label: 'Painel', icon: LayoutDashboard, group: 'Visão geral', description: 'Situação financeira e andamento do projeto.' },
-  // id antigo mantido para não quebrar links (#mensalidades)
-  { id: 'mensalidades', label: 'Pagamentos', icon: CalendarClock, group: 'Financeiro', description: 'Dinheiro recebido de cada aluno, com estornos.' },
+  { id: 'mensalidades', label: 'Mensalidades', icon: CalendarClock, group: 'Financeiro', description: 'Parcelas, pagamentos, atrasos e estornos de cada aluno.' },
   { id: 'arrecadacoes', label: 'Arrecadações', icon: HandCoins, group: 'Financeiro', description: 'Rifas, vendas, eventos, doações e patrocínios.' },
   { id: 'despesas', label: 'Despesas', icon: Receipt, group: 'Financeiro', description: 'Saídas de caixa com categoria, justificativa e comprovante.' },
+  { id: 'relatorios', label: 'Prestação de contas', icon: FileBarChart, group: 'Financeiro', description: 'Entradas, saídas, saldo por período e exportação.' },
   { id: 'simulador', label: 'Simulador', icon: Calculator, group: 'Financeiro', description: 'Projete saldo, rendimento e déficit em diferentes cenários.' },
   { id: 'alunos', label: 'Alunos', icon: Users, group: 'Organização', description: 'Participantes, adesões e situação de cada aluno.' },
   { id: 'viagem', label: 'Viagem', icon: Plane, group: 'Organização', description: 'Destino, datas, transporte, hospedagem e serviços.' },

@@ -69,9 +69,43 @@
 ### Não verificado
 - Fluxo com banco real (login, gravação, RLS): depende de criar o projeto Supabase.
 
+## Etapa 2 (conclusão) + etapas 3 a 6 — Sistema completo (2026-11-10)
+
+### Implementado
+- **Configurações** editáveis com histórico (versões, autor, data, motivo, antes/depois) e aprovação do
+  professor para regras financeiras. Painel, simulador, viagem e menu leem a configuração vigente do banco.
+- **Mensalidades:** geração de parcelas pelas regras aprovadas, situação paga/parcial/a vencer/atrasada,
+  adicional por atraso, pagamento parcial, distribuído (mais antiga primeiro) ou avulso, bloqueio de pagamento
+  acima do saldo, estorno, histórico por aluno, indicadores de inadimplência.
+- **Alunos:** correção de cadastro com histórico, importação de Excel/CSV com prévia e duplicados,
+  desistência com devolução prevista pela regra vigente.
+- **Arrecadações:** ações com receita e custos imutáveis, estorno, dados descritivos editáveis, comprovantes, período.
+- **Despesas:** categorias, justificativa, comprovante no envio ou depois, estorno, indicador "sem comprovante", período.
+- **Documentos:** Storage privado, categorias, público só para regulamento e relatórios, ver/baixar por link
+  temporário, exclusão com motivo preservando o registro.
+- **Agências:** cadastro com CNPJ validado, propostas com 6 serviços e condições, PDF anexo, histórico,
+  comparação lado a lado com destaque por critério (sem vencedora automática).
+- **Prestação de contas:** período livre, saldo inicial/final, entradas × saídas por mês, despesas por categoria,
+  livro-caixa com saldo, projeção separada e rotulada, CSV (livro-caixa, pagamentos, parcelas, arrecadações,
+  despesas), PDF pela impressão do navegador, rendimentos lançados do extrato. Visitante vê só totais.
+- **Backup:** JSON completo em Configurações; `scripts/restaurar-backup.mjs` + `docs/BACKUP.md`.
+- **Painel** com saldo, despesas, rendimentos, gráfico "Realizado", pendências e próximas etapas reais.
+
+### Testes executados
+- `npm test`: 101/101. `npm run typecheck` e `npm run build`: ok.
+- `scripts/db-test.sh`: 128 verificações de RLS e regras (visitante, conta sem papel, professor, admin,
+  imutabilidade, estornos, parcelas, aprovação, documentos).
+- `scripts/e2e`: Storage e PostgREST oficiais + navegador real: 55 verificações (importação, aprovação pelo
+  professor, geração de parcelas, pagamentos, estornos, uploads, comparação, CSV, PDF, backup, visitante,
+  celular sem rolagem horizontal), sem erros de console.
+- Restauração do backup num banco limpo reproduz os mesmos totais e parcelas.
+
+### Não verificado
+- No Supabase real (projeto `qhfwefqtgcuulukefvtk`): depende de rodar as migrações 0002–0007 (docs/PUBLICAR.md).
+  O login do teste local é um substituto do Supabase Auth.
+
 ## Próximas etapas
-2. Banco e acesso (restante): Supabase, migrações, RLS, login, papéis, Configurações editáveis com auditoria, cadastro de alunos.
-3. Mensalidades e pagamentos: geração de parcelas, pagamento parcial, adicional por atraso, ledger, painel com dados reais, cenários comparados no simulador.
-4. Arrecadações, despesas e documentos: comprovantes no Storage, lucro líquido, aprovação de despesas.
-5. Viagem e agências: cadastro de propostas e comparação por critérios.
-6. Prestação de contas: CSV, PDF, área do participante, importação de alunos, backup, trilha de auditoria.
+- Área do participante (responsável vê só o próprio aluno: papéis `responsavel`/`aluno` já existem).
+- Aprovação de despesas acima de um limite pelo professor.
+- Notificações de vencimento (e-mail/WhatsApp) — depende de serviço externo.
+- Dispensa de adicional por atraso (com aprovação do professor).

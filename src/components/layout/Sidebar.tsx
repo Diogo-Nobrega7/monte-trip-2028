@@ -37,7 +37,7 @@ export function Sidebar({ route, onNavigate, theme, onTheme, open, onClose }: {
         <button onClick={() => { onNavigate('viagem'); onClose() }}
           className="relative mx-4 mb-3 rounded-md bg-white/[0.05] ring-1 ring-inset ring-white/[0.06] px-3.5 py-3 text-left transition-colors hover:bg-white/[0.08]">
           <span className="flex items-center justify-between text-[12px] text-white/50">
-            Destino provisório <span className="size-1.5 rounded-full bg-[#F2B705]" aria-hidden />
+            {s.provisional ? 'Destino provisório' : 'Destino'} <span className="size-1.5 rounded-full bg-[#F2B705]" aria-hidden />
           </span>
           <span className="block text-sm font-medium mt-1">{s.destination}</span>
           <span className="block text-[12px] text-white/50 mt-0.5">{s.destinationCity}, {s.days} dias e {s.nights} noites</span>
