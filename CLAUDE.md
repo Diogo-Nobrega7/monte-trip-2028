@@ -21,8 +21,8 @@ Contexto, riscos e pendências das conversas iniciais: docs/CONTEXTO.md.
 ## Stack
 - Vite 5 + React 18 + TypeScript (strict) + Tailwind 3
 - Recharts (gráficos), lucide-react (ícones)
-- Vitest (testes), playwright-core (teste de fumaça)
-- Planejado: Supabase (Postgres, Auth, RLS, Storage) — ver docs/ARQUITETURA.md
+- Vitest (testes), playwright-core (teste de fumaça), read-excel-file 9.3.12 (importação, versão fixa)
+- Supabase (Postgres, Auth, RLS, Storage) — ver docs/ARQUITETURA.md
 
 ## Comandos
 ```
@@ -34,6 +34,9 @@ npm run build        # gera dist/index.html (arquivo único)
 npx playwright-core install chromium   # uma vez, para o teste de fumaça
 npx vite preview --port 4173 &
 node scripts/smoke.mjs                 # opcional: CHROME=<caminho> para outro Chromium
+PGHOST=... PGPORT=... PGUSER=postgres scripts/db-test.sh   # migrações + RLS num Postgres local
+scripts/e2e/subir.sh && <build com a chave impressa> && node scripts/e2e/e2e.cjs  # ponta a ponta (Docker)
+node scripts/restaurar-backup.mjs backup.json > restaurar.sql   # recuperação (docs/BACKUP.md)
 ```
 Variáveis: copiar `.env.example` para `.env.local` (Supabase URL + publishable key).
 
@@ -48,13 +51,17 @@ src/
     ui/         Button, Card, Badge, Tooltip, Modal, Dropdown, Field, RangeField,
                 Segmented, Toolbar, DataTable, Stat, AnimatedNumber, Toast, Skeleton…
     charts/     ProjectionChart, ChartTooltip, ChartLegend, tema dos gráficos
-    patterns/   ListPage (cabeçalho + indicadores + busca/filtro + tabela + modal), StatRow
-  config/       defaults.ts — cenário inicial ilustrativo
-  features/     uma pasta por módulo (dashboard, students, installments,
-                fundraising, expenses, simulator, trip, agencies, documents, settings)
+    patterns/   ListPage, TableCard, StatRow, PeriodFilter, ReverseModal (estorno), AuditModal (histórico), AttachModal (anexo)
+  config/       defaults.ts — cenário inicial ilustrativo (só modo demonstração)
+  data/         db.ts, repo.ts (alunos/pagamentos), settings, installments, cash, documents, agencies, audit, backup, spreadsheet
+  features/     uma pasta por módulo (dashboard, students, installments, fundraising, expenses,
+                reports, simulator, trip, agencies, documents, settings, auth)
   hooks/        useHashRoute, useTheme
-  lib/          finance.ts (+ testes), format.ts
+  lib/          funções puras com testes: finance, installments, settings, ledger, period, csv, import, proposals, cnpj, payments
   types/        domain.ts
+supabase/migrations  0001–0007 (rodar em ordem no SQL Editor)
+supabase/tests       Supabase de mentira + testes de RLS e regras (scripts/db-test.sh)
+scripts/e2e          ambiente local com Storage/PostgREST oficiais + teste de navegador
 ```
 
 ## Convenções
@@ -63,7 +70,11 @@ src/
 - Nada de componente visual novo sem antes verificar se já existe em components/ui.
 - Tema: claro/escuro/sistema via `data-theme` no `<html>`.
 - Novo módulo: criar `features/<modulo>/<Modulo>Page.tsx`, registrar em `app/routes.ts` e em `App.tsx`.
-- Cálculos financeiros apenas em `lib/` como funções puras, sempre com teste.
+- Cálculos financeiros apenas em `lib/` como funções puras, sempre com teste. Regra que também vive no banco
+  (parcelas, CNPJ, validação de configurações) tem os mesmos cenários de teste em `lib/*.test.ts` e `supabase/tests`.
+- Banco: toda mudança é uma migração nova numerada; nunca editar uma já rodada no Supabase. Escrita sensível
+  passa por função `security definer` que confere o papel; tabelas de dinheiro sem UPDATE/DELETE.
+- Sem permissão de leitura, a tela mostra só o aviso (nunca zeros que pareçam dados reais).
 - Textos da interface em português, voz ativa, sem jargão técnico.
 
 ## Decisões
@@ -71,10 +82,12 @@ src/
 - Supabase: Postgres relacional + autenticação + RLS resolvem multiusuário e permissões sem servidor próprio.
 - Juros: taxa mensal equivalente (1+a)^(1/12)−1, depósitos postecipados. Validado contra a tabela do briefing.
 
-## Estado atual
-Etapas 1 e 1.5 concluídas. Etapa 2 parcial (2026-11-10): Supabase (migração, RLS, login), cadastro de alunos,
-registro e estorno de pagamentos, resumo público no Painel, deploy no GitHub Pages. Detalhes: docs/PROGRESSO.md.
-Publicação e configuração do Supabase: docs/PUBLICAR.md.
+## Estado atual (2026-11-10)
+Etapas 1 a 6 implementadas no ramo `claude/sistema-completo`: configurações com histórico e aprovação do professor,
+mensalidades (parcelas, parcial, atraso, distribuição, estorno), arrecadações, despesas com comprovante, rendimentos,
+documentos no Storage, agências com comparação, prestação de contas (CSV/PDF), importação de alunos e backup.
+Testes: 101 unitários, 128 de banco, 55 de ponta a ponta. Detalhes: docs/PROGRESSO.md.
+Publicação e configuração do Supabase: docs/PUBLICAR.md. Backup: docs/BACKUP.md.
 Sem `.env.local` o site roda em modo demonstração (`src/data/supabase.ts` → cliente null).
 
 ## Publicação
@@ -89,8 +102,9 @@ Sem `.env.local` o site roda em modo demonstração (`src/data/supabase.ts` → 
 Etapas 1 e 1.5 feitas no claude.ai (chat). Versão publicada lá como página estática de demonstração.
 A partir daqui o desenvolvimento segue no Claude Code, neste repositório.
 
-## Próxima sessão: fechar a etapa 2
-1. Com o Supabase criado: testar login, cadastro, pagamento, estorno e bloqueio de visitante no site real.
-2. Teste de RLS (anon não lê students/payments; supervisor não grava; ninguém faz update/delete em payments).
-3. Configurações editáveis com histórico (tabela `settings`).
-4. Ledger separado (hoje `payments` é append-only e faz esse papel).
+## Próxima sessão
+1. Confirmar que as migrações 0002–0007 rodaram no Supabase real e que a conta do professor existe; depois
+   juntar o ramo na main (banco primeiro, site depois — docs/PUBLICAR.md).
+2. Conferir no site real: aprovação de regra, geração de parcelas, envio de comprovante.
+3. Pendências de produto: área do participante, aprovação de despesas acima de limite, dispensa de adicional.
+Decisão: o "ledger" é a visão `livro_caixa` (soma das tabelas imutáveis), não uma tabela copiada.

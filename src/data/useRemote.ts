@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 /** Carrega dados do banco com estado de carregamento/erro e permite recarregar após gravar. */
-export function useRemote<T>(load: () => Promise<T>, enabled: boolean, initial: T) {
+/** `key` recarrega quando muda (ex.: id do registro aberto num modal). */
+export function useRemote<T>(load: () => Promise<T>, enabled: boolean, initial: T, key: string | number = '') {
   const [data, setData] = useState<T>(initial)
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
@@ -16,9 +17,9 @@ export function useRemote<T>(load: () => Promise<T>, enabled: boolean, initial: 
       (e: Error) => { if (alive) setError(e.message) },
     ).finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
-    // `load` é sempre uma função estável do repositório
+    // `load` muda a cada render; quem precisa recarregar por parâmetro usa `key`
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, tick])
+  }, [enabled, tick, key])
 
   const reload = useCallback(() => setTick((t) => t + 1), [])
   return { data, loading, error, reload }

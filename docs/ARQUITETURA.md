@@ -2,47 +2,61 @@
 
 ## Visão geral
 ```
-Navegador (React SPA)
+Navegador (React SPA, GitHub Pages)
   ├─ features/*      telas
-  ├─ lib/            cálculos puros (testados)
-  └─ data/           repositórios  ← etapa 2
-        │  supabase-js (JWT do usuário)
+  ├─ lib/            cálculos puros (testados): finance, installments, settings, ledger, period, csv, import, proposals, cnpj
+  └─ data/           repositórios (único lugar que fala com o banco)
+        │  supabase-js (JWT do usuário; só a publishable key no navegador)
         ▼
 Supabase
-  ├─ Auth            login por e-mail
-  ├─ Postgres + RLS  dados e permissões por linha
-  ├─ Storage         comprovantes e documentos (buckets privados)
-  └─ Triggers        auditoria e saldos
+  ├─ Auth            login por e-mail (cadastro aberto desligado)
+  ├─ Postgres + RLS  dados e permissões por linha; funções para operações sensíveis
+  ├─ Storage         bucket privado "documentos" (PDF/imagens, 10 MB)
+  └─ Triggers        auditoria, validação de estornos e de saldo de parcela
 ```
-A interface nunca decide permissão sozinha: o banco (RLS) é a fonte de verdade.
+A interface só esconde botões. Quem bloqueia é o banco (RLS, revoke e funções que conferem o papel).
 
 ## Papéis
 | Papel | Acesso |
 |---|---|
-| admin (Davi) | tudo, exceto aprovar mudança de regra financeira |
-| supervisor (professor) | leitura total, aprova regras, despesas acima de limite |
-| responsavel | dados do próprio aluno, relatórios públicos |
-| aluno | parcelas próprias, relatórios públicos |
+| admin (Davi) | grava tudo; propõe mudanças de regra; não aprova as próprias |
+| supervisor (professor) | lê tudo, não grava lançamentos; aprova ou rejeita mudanças de regra financeira |
+| visitante (sem login) | só totais (`resumo_publico`, `resumo_publico_mensal`), configuração vigente e documentos públicos |
+| responsavel, aluno | previstos no banco; área própria ainda não implementada |
 
-## Modelo de dados (planejado)
-Valores em `bigint` (centavos). Datas em `date`/`timestamptz`.
+## Tabelas (migrações em `supabase/migrations`)
+Valores em `bigint` (centavos). Percentuais em pontos-base (1500 = 15%).
 
-- `profiles` (id = auth.users.id, nome, papel)
-- `settings` (chave, valor jsonb, vigente_desde, aprovado_por) — versionada
-- `students` (id, nome, data_nasc, responsavel_nome, responsavel_contato, adesao_em, status, profile_id)
-- `installments` (id, student_id, numero, vencimento, valor, status) — único (student_id, numero)
-- `payments` (id, installment_id, valor, pago_em, metodo, comprovante_path, idempotency_key único, registrado_por)
-- `fundraisings` (id, tipo, titulo, data, receita_bruta, custos, responsavel)
-- `expenses` (id, categoria, descricao, data, valor, justificativa, comprovante_path, aprovado_por)
-- `ledger` (id, data, tipo entrada|saida|rendimento|estorno, valor, origem_tabela, origem_id, saldo_apos) — append-only
-- `investments` (id, instituicao, produto, aplicado_em, valor, saldo_informado_em, saldo)
-- `agencies` (id, nome, cnpj, cadastur, contato)
-- `proposals` (id, agency_id, preco_aluno, inclui jsonb, condicoes, validade, arquivo_path)
-- `documents` (id, tipo, titulo, student_id null, arquivo_path, visibilidade)
-- `audit_log` (id, tabela, registro_id, acao, antes jsonb, depois jsonb, usuario, em)
+| Migração | Tabelas e funções |
+|---|---|
+| 0001 | `profiles`, `students`, `payments` (imutável, estorno), `audit_log`, `resumo_publico()` |
+| 0002 | `config_versions` (versões, nunca sobrescreve), `config_proposals` (pendente/aprovada/rejeitada/cancelada); `configuracao_vigente()`, `propor_configuracoes()`, `decidir_proposta()`, `cancelar_proposta()`, `validar_configuracoes()` |
+| 0003 | `installments` (parcela guarda valor e adicional da época), `payments.installment_id`; `situacao_parcela()`, `sincronizar_parcelas()`, `registrar_pagamento_distribuido()`; gatilho impede pagar acima do saldo |
+| 0004 | `fundraisings` + `fundraising_entries` (receita/custo, imutável), `expenses` (imutável, só textos corrigíveis), `yields`; visão `livro_caixa`; `registrar_arrecadacao()` |
+| 0005 | `agencies`, `proposals` (editáveis com auditoria, descartar em vez de apagar); `cnpj_valido()` |
+| 0006 | bucket `documentos`, `documents` (exclusão lógica com motivo), políticas do Storage; `excluir_documento()` |
+| 0007 | `resumo_publico()` ampliado (saldo, despesas, rendimentos), `resumo_publico_mensal()`, visão `parcelas_situacao` |
 
-## Garantias financeiras
-- Pagamento duplicado bloqueado por `idempotency_key` único.
-- Todo pagamento, arrecadação, despesa e rendimento gera linha no `ledger` via trigger.
-- Saldo do painel = soma do `ledger`; conferível contra extrato bancário.
-- Sem UPDATE/DELETE em `ledger` e `payments` (RLS + revoke); correção por estorno.
+## Regras e garantias
+- **Dinheiro imutável:** pagamentos, lançamentos de ações, despesas e rendimentos não têm UPDATE/DELETE
+  (revoke). Correção = estorno com valor oposto, validado por gatilho (mesmo valor, uma vez, nunca estorno de estorno).
+- **Duplicidade:** `idempotency_key` única, gerada quando o formulário abre.
+- **Parcelas:** pago no prazo = pagamentos válidos até o vencimento; vencida com falta → adicional sobre o que
+  faltou, uma vez, arredondado ao centavo. Parcial nunca vira "paga". Mesma regra em SQL e em `lib/installments.ts`,
+  com os mesmos cenários de teste nos dois lados.
+- **Configurações:** gerais entram na hora; financeiras viram proposta para o professor. Na aprovação só mudam as
+  chaves propostas, e só se não foram alteradas depois (senão a aprovação é recusada).
+- **Parcelas só com regras aprovadas:** `sincronizar_parcelas()` recusa enquanto `provisorio = true`. Só parcelas
+  futuras sem pagamento são atualizadas; vencidas ou pagas nunca mudam.
+- **Saldo:** soma da visão `livro_caixa` (pagamentos + ações + rendimentos − despesas). É uma visão, não uma cópia:
+  não diverge. Conferível contra o extrato.
+- **Auditoria:** gatilho grava antes/depois de toda mudança em alunos, parcelas, pagamentos, caixa, agências,
+  propostas e documentos. Ninguém escreve no `audit_log`.
+- **Documentos:** bucket privado; leitura por link assinado de 5 minutos. Só regulamento e relatórios podem ser
+  públicos, e nunca se ligados a aluno, despesa, ação ou proposta (check no banco).
+
+## Testes
+- `npm test`: cálculos (parcelas, configurações, livro-caixa, CSV, importação, CNPJ, propostas, juros).
+- `scripts/db-test.sh`: migrações + 128 verificações de permissão e de regra num Postgres local que imita o Supabase.
+- `scripts/e2e/`: Storage e PostgREST oficiais (Docker) + login de teste; navegador faz o fluxo completo (55 verificações).
+- `scripts/smoke.mjs`: telas em modo demonstração (sem banco).

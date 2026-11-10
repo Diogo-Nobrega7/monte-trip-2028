@@ -25,6 +25,9 @@ Tempo total: uns 20 minutos, uma vez só.
 4. Menu lateral → **SQL Editor** → **New query**. Abra o arquivo
    `supabase/migrations/0001_inicial.sql`, copie tudo, cole e clique **Run**.
    Deve aparecer "Success. No rows returned".
+   Repita, **um arquivo por vez e nesta ordem**, com `0002_configuracoes.sql`, `0003_mensalidades.sql`,
+   `0004_caixa.sql`, `0005_agencias.sql`, `0006_documentos.sql` e `0007_resumo_publico.sql`.
+   (Projeto que já rodou a 0001: comece na 0002. Rode cada arquivo uma vez só.)
 5. **Bloquear cadastro aberto:** menu **Authentication** → **Sign In / Providers** (ou *Providers*)
    → em **Email**, desligue **Allow new users to sign up** e salve.
    Assim ninguém consegue criar conta sozinho.
@@ -39,8 +42,10 @@ Tempo total: uns 20 minutos, uma vez só.
 
    Deve aparecer "Success. 1 row". Se aparecer "0 rows", o e-mail está diferente do passo 6.
 
-   (Opcional) Professor supervisor, só leitura: crie o usuário no passo 6 e rode o mesmo comando
-   trocando `'Davi', 'admin'` por `'Nome do professor', 'supervisor'`.
+   **Professor supervisor (necessário):** crie o usuário no passo 6 e rode o mesmo comando trocando
+   `'Davi', 'admin'` por `'Nome do professor', 'supervisor'`. O professor lê tudo, não grava nada, e é a
+   única pessoa que aprova mudanças de regra financeira (mensalidade, vencimento, adicional, devolução,
+   início das cobranças). Sem a conta dele, as parcelas não podem ser geradas.
 8. Pegue as chaves: **Project Settings** → **API Keys** (ou **Data API**). Copie:
    - **Project URL** (ex.: `https://abcd1234.supabase.co`)
    - **Publishable key** (começa com `sb_publishable_`). Se só aparecer "anon public", use essa.
@@ -78,20 +83,44 @@ que não precisam.
 
 ---
 
+## Atualizar um site que já está no ar
+
+Quando chegar uma versão nova com migrações novas em `supabase/migrations`:
+1. **Primeiro o banco:** rode no SQL Editor só os arquivos novos, em ordem.
+2. **Depois o site:** junte o ramo na `main` (o GitHub publica sozinho).
+
+Nessa ordem o site antigo continua funcionando enquanto o banco é atualizado. Na ordem inversa, o site novo
+ficaria procurando tabelas que ainda não existem.
+
+---
+
 ## Parte 3 — Uso no dia a dia (Davi)
 
-Quando um aluno mandar dinheiro:
+Primeira vez:
+1. **Entrar** (menu do usuário, no canto de baixo da barra lateral, ou `.../#entrar`). Funciona pelo celular.
+2. **Alunos** → **Importar planilha** (Excel ou CSV com coluna "Nome") ou **Cadastrar aluno** um a um.
+3. **Configurações** → **Editar**: confira valores, defina o **mês da primeira parcela**, desmarque
+   "Regras ainda provisórias" quando estiverem fechadas e escreva o motivo. Regras financeiras vão para o professor.
+4. O **professor** entra com a conta dele, abre **Configurações** e clica **Aprovar**.
+5. **Mensalidades** → **Gerar parcelas**.
 
-1. Abra o site e vá em **Entrar** (menu do usuário, no canto de baixo da barra lateral,
-   ou direto em `.../#entrar`). Funciona pelo celular.
-2. Primeira vez: **Alunos** → **Cadastrar aluno** para cada aluno.
-3. **Pagamentos** → **Registrar pagamento** → escolha o aluno, valor, data e forma → **Salvar**.
-4. O total no **Painel** atualiza na hora para todo mundo.
+Quando um aluno mandar dinheiro: **Mensalidades** → **Registrar pagamento** → aluno, valor, data, forma.
+Por padrão o valor quita as parcelas em aberto da mais antiga para a mais nova (dá para escolher uma parcela
+específica ou registrar como avulso). Pagamento menor que a parcela fica como **Parcial**; depois do
+vencimento entra o adicional por atraso.
 
-Errou um lançamento? Na lista de pagamentos, clique **Estornar** e escreva o motivo. O original
-fica no histórico (por transparência) e o valor é descontado. Depois registre o certo.
+Outras rotinas:
+- Ações (bazar, evento, patrocínio): **Arrecadações** → receita e custos; comprovantes em **Lançamentos**.
+- Gastos: **Despesas**, sempre com justificativa e comprovante (PDF ou foto).
+- Rendimento da aplicação: **Prestação de contas** → **Registrar rendimento**, copiando do extrato.
+- Prestação de contas para pais e escola: **Prestação de contas** → período → **Gerar PDF** ou CSV.
+- Uma vez por mês: **Configurações** → **Baixar cópia de segurança** (ver `docs/BACKUP.md`).
 
-Aluno desistiu? Em **Alunos**, clique **Desistiu**. O histórico de pagamentos continua guardado.
+Errou um lançamento? Clique **Estornar** e escreva o motivo. O original fica no histórico e o valor é
+descontado. Depois registre o certo. Vale para pagamentos, arrecadações, despesas e rendimentos.
+
+Aluno desistiu? Em **Alunos**, clique **Desistiu**: a tela mostra a devolução prevista pela regra vigente.
+Ao devolver, registre em Despesas, categoria "Devolução a desistente".
 
 ---
 
@@ -102,5 +131,8 @@ Aluno desistiu? Em **Alunos**, clique **Desistiu**. O histórico de pagamentos c
 | Site mostra "Modo demonstração" | Variáveis da Parte 2, passo 4, faltando ou com nome errado. Rode o workflow de novo depois de corrigir. |
 | "E-mail ou senha incorretos" | Conferir o usuário em Authentication → Users. Dá para trocar a senha lá. |
 | Entra, mas não aparece botão de registrar | Faltou o passo 7 da Parte 1 (papel admin). |
+| "Não foi possível carregar a configuração" | Faltou rodar as migrações 0002 a 0007. |
+| "Gerar parcelas" diz que as regras estão provisórias | O professor ainda não aprovou as regras definitivas. |
+| Envio de arquivo dá "Sem permissão" | Faltou a migração 0006 (cria o bucket privado e as regras do Storage). |
 | "Sem permissão" ao salvar | Mesmo caso acima. |
 | Workflow falha no GitHub | Aba Actions → abrir a execução → ver o passo em vermelho. |
