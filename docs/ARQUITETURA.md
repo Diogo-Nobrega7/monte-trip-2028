@@ -19,8 +19,8 @@ A interface só esconde botões. Quem bloqueia é o banco (RLS, revoke e funçõ
 ## Papéis
 | Papel | Acesso |
 |---|---|
-| admin (Davi) | grava tudo; propõe mudanças de regra; não aprova as próprias |
-| supervisor (professor) | lê tudo, não grava lançamentos; aprova ou rejeita mudanças de regra financeira |
+| admin (Davi) | grava e altera tudo, inclusive regras financeiras (valem na hora, com histórico) |
+| supervisor (professor) | só leitura de tudo |
 | visitante (sem login) | só totais (`resumo_publico`, `resumo_publico_mensal`), configuração vigente e documentos públicos |
 | responsavel, aluno | previstos no banco; área própria ainda não implementada |
 
@@ -44,9 +44,10 @@ Valores em `bigint` (centavos). Percentuais em pontos-base (1500 = 15%).
 - **Parcelas:** pago no prazo = pagamentos válidos até o vencimento; vencida com falta → adicional sobre o que
   faltou, uma vez, arredondado ao centavo. Parcial nunca vira "paga". Mesma regra em SQL e em `lib/installments.ts`,
   com os mesmos cenários de teste nos dois lados.
-- **Configurações:** gerais entram na hora; financeiras viram proposta para o professor. Na aprovação só mudam as
-  chaves propostas, e só se não foram alteradas depois (senão a aprovação é recusada).
-- **Parcelas só com regras aprovadas:** `sincronizar_parcelas()` recusa enquanto `provisorio = true`. Só parcelas
+- **Configurações:** o admin altera tudo e vale na hora; cada mudança é uma versão nova com autor, motivo e antes/depois.
+  As tabelas e funções de proposta/aprovação (`config_proposals`, `decidir_proposta`) existem mas não são usadas
+  (decisão de 2026-11-10: professor só acompanha).
+- **Parcelas só com regras definitivas:** `sincronizar_parcelas()` recusa enquanto `provisorio = true`. Só parcelas
   futuras sem pagamento são atualizadas; vencidas ou pagas nunca mudam.
 - **Saldo:** soma da visão `livro_caixa` (pagamentos + ações + rendimentos − despesas). É uma visão, não uma cópia:
   não diverge. Conferível contra o extrato.
@@ -57,6 +58,6 @@ Valores em `bigint` (centavos). Percentuais em pontos-base (1500 = 15%).
 
 ## Testes
 - `npm test`: cálculos (parcelas, configurações, livro-caixa, CSV, importação, CNPJ, propostas, juros).
-- `scripts/db-test.sh`: migrações + 128 verificações de permissão e de regra num Postgres local que imita o Supabase.
+- `scripts/db-test.sh`: migrações + 119 verificações de permissão e de regra num Postgres local que imita o Supabase.
 - `scripts/e2e/`: Storage e PostgREST oficiais (Docker) + login de teste; navegador faz o fluxo completo (55 verificações).
 - `scripts/smoke.mjs`: telas em modo demonstração (sem banco).

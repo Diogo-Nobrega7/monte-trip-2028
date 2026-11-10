@@ -1,12 +1,11 @@
--- Monte Trip 2028 — configurações editáveis com histórico e aprovação do professor.
+-- Monte Trip 2028 — configurações editáveis com histórico.
 -- Rodar depois de 0001_inicial.sql (SQL Editor → New query → colar → Run).
 --
 -- Como funciona:
 --   * Cada mudança gera uma nova VERSÃO (config_versions). Nada é sobrescrito: a vigente é a última.
---   * Mudanças em regras financeiras (mensalidade, parcelas, vencimento, adicional, devolução,
---     início das cobranças, entrada de novos alunos e o selo "provisório") viram uma PROPOSTA
---     (config_proposals) que só entra em vigor quando o professor supervisor aprova.
---   * Demais campos (destino, datas, orçamento estimado, rendimento hipotético, nomes) entram na hora.
+--   * O admin altera tudo e a mudança entra na hora, com autor, data, motivo e valores anteriores.
+--   * O professor (supervisor) só lê. As tabelas e funções de proposta/aprovação ficam disponíveis
+--     para uso futuro, mas o site não as usa: propor_configuracoes() nunca cria proposta.
 --   * Ninguém grava nessas tabelas diretamente: só pelas funções abaixo, que conferem o papel.
 --   * Percentuais em pontos-base (inteiros): 1500 = 15%. Dinheiro em centavos.
 
@@ -174,11 +173,8 @@ begin
   select * into atual from public.config_versions order by id desc limit 1 for update;
   foreach k in array public.chaves_configuracao() loop
     if atual.valores->k is distinct from p_valores->k then
-      if k = any (public.chaves_financeiras()) then
-        fin := fin || jsonb_build_object(k, jsonb_build_object('de', atual.valores->k, 'para', p_valores->k));
-      else
-        geral := geral || jsonb_build_object(k, jsonb_build_object('de', atual.valores->k, 'para', p_valores->k));
-      end if;
+      -- decisão do projeto: o admin aplica tudo na hora (regras financeiras inclusive)
+      geral := geral || jsonb_build_object(k, jsonb_build_object('de', atual.valores->k, 'para', p_valores->k));
     end if;
   end loop;
   if geral = '{}' and fin = '{}' then raise exception 'Nada foi alterado'; end if;

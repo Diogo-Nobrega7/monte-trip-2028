@@ -83,10 +83,11 @@ scripts/e2e          ambiente local com Storage/PostgREST oficiais + teste de na
 - Juros: taxa mensal equivalente (1+a)^(1/12)−1, depósitos postecipados. Validado contra a tabela do briefing.
 
 ## Estado atual (2026-11-10)
-Etapas 1 a 6 implementadas no ramo `claude/sistema-completo`: configurações com histórico e aprovação do professor,
+Etapas 1 a 6 implementadas no ramo `claude/sistema-completo`: configurações com histórico (admin altera tudo,
+na hora; professor só lê — decisão do usuário em 2026-11-10),
 mensalidades (parcelas, parcial, atraso, distribuição, estorno), arrecadações, despesas com comprovante, rendimentos,
 documentos no Storage, agências com comparação, prestação de contas (CSV/PDF), importação de alunos e backup.
-Testes: 101 unitários, 128 de banco, 55 de ponta a ponta. Detalhes: docs/PROGRESSO.md.
+Testes: 101 unitários, 119 de banco, 55 de ponta a ponta (rodado antes da mudança do professor; refazer). Detalhes: docs/PROGRESSO.md.
 Publicação e configuração do Supabase: docs/PUBLICAR.md. Backup: docs/BACKUP.md.
 Sem `.env.local` o site roda em modo demonstração (`src/data/supabase.ts` → cliente null).
 
@@ -103,8 +104,9 @@ Etapas 1 e 1.5 feitas no claude.ai (chat). Versão publicada lá como página es
 A partir daqui o desenvolvimento segue no Claude Code, neste repositório.
 
 ## Próxima sessão
-1. Confirmar que as migrações 0002–0007 rodaram no Supabase real e que a conta do professor existe; depois
+1. Confirmar que as migrações 0002–0007 rodaram no Supabase real; depois
    juntar o ramo na main (banco primeiro, site depois — docs/PUBLICAR.md).
-2. Conferir no site real: aprovação de regra, geração de parcelas, envio de comprovante.
+2. Conferir no site real: mudança de regra, geração de parcelas, envio de comprovante.
+   O teste e2e (scripts/e2e/e2e.cjs) ainda tem o passo do professor aprovando: atualizar.
 3. Pendências de produto: área do participante, aprovação de despesas acima de limite, dispensa de adicional.
 Decisão: o "ledger" é a visão `livro_caixa` (soma das tabelas imutáveis), não uma tabela copiada.

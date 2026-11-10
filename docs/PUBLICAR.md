@@ -42,10 +42,8 @@ Tempo total: uns 20 minutos, uma vez só.
 
    Deve aparecer "Success. 1 row". Se aparecer "0 rows", o e-mail está diferente do passo 6.
 
-   **Professor supervisor (necessário):** crie o usuário no passo 6 e rode o mesmo comando trocando
-   `'Davi', 'admin'` por `'Nome do professor', 'supervisor'`. O professor lê tudo, não grava nada, e é a
-   única pessoa que aprova mudanças de regra financeira (mensalidade, vencimento, adicional, devolução,
-   início das cobranças). Sem a conta dele, as parcelas não podem ser geradas.
+   (Opcional) Professor supervisor, só leitura: crie o usuário no passo 6 e rode o mesmo comando trocando
+   `'Davi', 'admin'` por `'Nome do professor', 'supervisor'`. Ele vê tudo e não altera nada.
 8. Pegue as chaves: **Project Settings** → **API Keys** (ou **Data API**). Copie:
    - **Project URL** (ex.: `https://abcd1234.supabase.co`)
    - **Publishable key** (começa com `sb_publishable_`). Se só aparecer "anon public", use essa.
@@ -100,9 +98,8 @@ Primeira vez:
 1. **Entrar** (menu do usuário, no canto de baixo da barra lateral, ou `.../#entrar`). Funciona pelo celular.
 2. **Alunos** → **Importar planilha** (Excel ou CSV com coluna "Nome") ou **Cadastrar aluno** um a um.
 3. **Configurações** → **Editar**: confira valores, defina o **mês da primeira parcela**, desmarque
-   "Regras ainda provisórias" quando estiverem fechadas e escreva o motivo. Regras financeiras vão para o professor.
-4. O **professor** entra com a conta dele, abre **Configurações** e clica **Aprovar**.
-5. **Mensalidades** → **Gerar parcelas**.
+   "Regras ainda provisórias" quando estiverem fechadas e escreva o motivo. Vale na hora e fica no histórico.
+4. **Mensalidades** → **Gerar parcelas**.
 
 Quando um aluno mandar dinheiro: **Mensalidades** → **Registrar pagamento** → aluno, valor, data, forma.
 Por padrão o valor quita as parcelas em aberto da mais antiga para a mais nova (dá para escolher uma parcela
@@ -132,7 +129,7 @@ Ao devolver, registre em Despesas, categoria "Devolução a desistente".
 | "E-mail ou senha incorretos" | Conferir o usuário em Authentication → Users. Dá para trocar a senha lá. |
 | Entra, mas não aparece botão de registrar | Faltou o passo 7 da Parte 1 (papel admin). |
 | "Não foi possível carregar a configuração" | Faltou rodar as migrações 0002 a 0007. |
-| "Gerar parcelas" diz que as regras estão provisórias | O professor ainda não aprovou as regras definitivas. |
+| "Gerar parcelas" diz que as regras estão provisórias | Desmarque "Regras ainda provisórias" em Configurações. |
 | Envio de arquivo dá "Sem permissão" | Faltou a migração 0006 (cria o bucket privado e as regras do Storage). |
 | "Sem permissão" ao salvar | Mesmo caso acima. |
 | Workflow falha no GitHub | Aba Actions → abrir a execução → ver o passo em vermelho. |

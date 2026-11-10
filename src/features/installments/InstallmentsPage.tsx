@@ -72,8 +72,8 @@ export function InstallmentsPage() {
   const notice = accessNotice(connected, canReadAll)
     ?? (enabled && !installments.data.length && !loading
       ? (s.provisional
-        ? 'As parcelas são geradas depois que o professor aprovar as regras definitivas em Configurações. Até lá, registre pagamentos como avulsos.'
-        : !s.startMonth ? 'Defina o mês da primeira parcela em Configurações para gerar as parcelas.' : 'Regras aprovadas. Use "Gerar parcelas" para criar as mensalidades de cada aluno ativo.')
+        ? 'As regras ainda estão marcadas como provisórias. Quando forem definitivas, desmarque "Regras ainda provisórias" em Configurações e gere as parcelas. Até lá, registre pagamentos como avulsos.'
+        : !s.startMonth ? 'Defina o mês da primeira parcela em Configurações para gerar as parcelas.' : 'Regras definitivas. Use "Gerar parcelas" para criar as mensalidades de cada aluno ativo.')
       : null)
 
   const instColumns: Column<InstRow>[] = [
@@ -157,7 +157,7 @@ export function InstallmentsPage() {
         searchPlaceholder="Buscar aluno" filters={['Todas', 'Atrasadas', 'Parciais', 'A vencer', 'Pagas']}
         matches={(r, q, f) => (!q || r.studentName.toLowerCase().includes(q))
           && (f === 'Todas' || ({ Atrasadas: 'atrasada', Parciais: 'parcial', 'A vencer': 'pendente', Pagas: 'paga' } as Record<string, InstallmentStatus>)[f] === r.status)}
-        empty={{ icon: CalendarClock, title: 'Nenhuma parcela gerada', text: 'Com as regras aprovadas e o mês de início definido, use "Gerar parcelas".' }} />}
+        empty={{ icon: CalendarClock, title: 'Nenhuma parcela gerada', text: 'Com as regras definitivas e o mês de início definido, use "Gerar parcelas".' }} />}
 
       {tab === 'Pagamentos' && <TableCard columns={payColumns} rows={payRows} rowKey={(r) => r.id} loading={loading} error={error}
         searchPlaceholder="Buscar aluno" filters={['Todos', 'Pix', 'Transferência', 'Dinheiro', 'Estornos']}
@@ -302,7 +302,7 @@ function GenerateModal({ open, onClose, activeStudents, onDone }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { if (open) setError(null) }, [open])
-  const blocked = s.provisional ? 'As regras ainda estão provisórias. O professor precisa aprovar as regras definitivas em Configurações.'
+  const blocked = s.provisional ? 'As regras ainda estão provisórias. Desmarque "Regras ainda provisórias" em Configurações quando estiverem fechadas.'
     : !s.startMonth ? 'Defina o mês da primeira parcela em Configurações.' : !activeStudents ? 'Não há alunos ativos.' : null
 
   async function run() {
@@ -312,7 +312,7 @@ function GenerateModal({ open, onClose, activeStudents, onDone }: {
     finally { setBusy(false) }
   }
   return (
-    <Modal open={open} onClose={onClose} title="Gerar parcelas" description="Cria as mensalidades de cada aluno ativo pelas regras aprovadas. Pode rodar de novo sem duplicar."
+    <Modal open={open} onClose={onClose} title="Gerar parcelas" description="Cria as mensalidades de cada aluno ativo pelas regras vigentes. Pode rodar de novo sem duplicar."
       footer={<>
         {error && <p role="alert" className="mr-auto text-sm text-bad">{error}</p>}
         <Button variant="ghost" onClick={onClose}>Cancelar</Button>

@@ -38,7 +38,7 @@ export function TripPage() {
                 <p className="font-display text-[32px] leading-tight font-bold tracking-[-0.025em] mt-1">{s.destination}</p>
                 <p className="text-sm text-muted mt-1">Saída de {s.origin}. {s.tripStart ? `Ida em ${dateBR(s.tripStart)}${s.tripEnd ? `, volta em ${dateBR(s.tripEnd)}` : ''}.` : 'Datas ainda não definidas.'}</p>
               </div>
-              {s.provisional ? <Badge tone="gold">Provisório</Badge> : <Badge tone="ok" dot>Regras aprovadas</Badge>}
+              {s.provisional ? <Badge tone="gold">Provisório</Badge> : <Badge tone="ok" dot>Regras definitivas</Badge>}
             </div>
           </div>
           <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-line [&>div]:p-5 [&>div]:border-line [&>div:nth-child(odd)]:border-r sm:[&>div]:border-r sm:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b sm:[&>div]:border-b-0">
