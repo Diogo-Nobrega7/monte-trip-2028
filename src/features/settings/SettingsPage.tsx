@@ -9,10 +9,10 @@ import { dateBR, today, useRemote } from '@/data/useRemote'
 import { money, percent } from '@/lib/format'
 import { parseMoney } from '@/lib/payments'
 import {
-  FINANCIAL_KEYS, LABELS, diffSettings, formatSettingValue, lastMonth, monthLabel, parsePercent, percentInput, toDb, validateSettings, type DbKey,
+  LABELS, diffSettings, formatSettingValue, lastMonth, monthLabel, parsePercent, percentInput, toDb, validateSettings, type DbKey,
 } from '@/lib/settings'
 import type { ProjectSettings } from '@/types/domain'
-import { Badge, Button, Card, CardHeader, Check, EmptyState, Field, Input, Modal, PageHeader, StageNotice, Textarea, Tooltip, useToast } from '@/components/ui'
+import { Badge, Button, Card, CardHeader, Check, EmptyState, Field, Input, Modal, PageHeader, StageNotice, Textarea, useToast } from '@/components/ui'
 
 const centsInput = (c: number) => (c / 100).toFixed(2).replace('.', ',')
 const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
@@ -31,7 +31,6 @@ export function SettingsPage() {
   const who = (id: string | null) => (id ? names.data.get(id) ?? 'Usuário' : 'Sistema')
   const refresh = () => { st.reload(); versions.reload(); proposals.reload() }
 
-  const lock = (k: DbKey) => FINANCIAL_KEYS.includes(k)
   const groups: { icon: typeof Plane; title: string; hint: string; rows: [DbKey | null, string, string][] }[] = [
     { icon: Plane, title: 'Viagem', hint: 'Destino e grupo', rows: [
       ['destino', 'Destino', `${s.destination}, ${s.destinationCity}`], ['origem', 'Saída', s.origin], ['ano', 'Ano', String(s.tripYear)],
@@ -64,14 +63,14 @@ export function SettingsPage() {
     <>
       <PageHeader icon={Settings} section="Administração" title="Configurações" description="Parâmetros que alimentam os cálculos, as parcelas e as regras do projeto."
         actions={<>
-          {s.provisional ? <Badge tone="gold">Regras provisórias</Badge> : <Badge tone="ok" dot>Regras aprovadas pelo professor</Badge>}
+          {s.provisional ? <Badge tone="gold">Regras provisórias</Badge> : <Badge tone="ok" dot>Regras definitivas</Badge>}
           {isAdmin && st.source === 'banco' && <Button variant="primary" icon={Pencil} onClick={() => setEditing(true)}>Editar</Button>}
         </>} />
       {notice && <StageNotice>{notice}</StageNotice>}
       {connected && !st.error && (
         <p className="flex items-start gap-2 text-[13px] text-muted -mt-2 mb-6">
           <Lock size={14} className="mt-0.5 shrink-0 text-faint" aria-hidden />
-          Campos com cadeado são regras financeiras: mudam só depois da aprovação do professor supervisor. Os demais mudam na hora. Tudo fica no histórico.
+          Só a administração altera. Toda mudança vale na hora e fica no histórico com autor, data, motivo e valores anteriores. O professor acompanha, sem precisar aprovar.
         </p>
       )}
 
@@ -82,9 +81,9 @@ export function SettingsPage() {
           <Card key={g.title}>
             <CardHeader title={<span className="flex items-center gap-2"><g.icon size={16} className="text-accent" aria-hidden />{g.title}</span>} hint={g.hint} />
             <dl className="px-5 pb-5 text-sm divide-y divide-line/70">
-              {g.rows.map(([key, k, v]) => (
+              {g.rows.map(([, k, v]) => (
                 <div key={k} className="flex justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                  <dt className="text-muted flex items-center gap-1.5">{k}{key && lock(key) && <Lock size={12} className="text-faint" aria-label="exige aprovação" />}</dt>
+                  <dt className="text-muted flex items-center gap-1.5">{k}</dt>
                   <dd className="num font-medium text-right">{v}</dd>
                 </div>
               ))}
@@ -97,10 +96,9 @@ export function SettingsPage() {
       {enabled && <BackupCard onError={(m) => toast(m, 'error')} onDone={() => toast('Cópia de segurança baixada')} />}
 
       {isAdmin && <SettingsForm open={editing} current={s} pendingExists={!!pending} onClose={() => setEditing(false)}
-        onSaved={(r) => {
+        onSaved={() => {
           setEditing(false); refresh()
-          toast(r.proposal && r.version ? 'Mudanças gerais salvas. Regras financeiras enviadas ao professor.'
-            : r.proposal ? 'Enviado para aprovação do professor' : 'Configurações atualizadas')
+          toast('Configurações atualizadas')
         }} />}
     </>
   )
@@ -273,8 +271,8 @@ function fromForm(f: FormState): { s: ProjectSettings; errors: Partial<Record<ke
   return { s, errors: { ...validateSettings(s), ...errors } }
 }
 
-function SettingsForm({ open, current, pendingExists, onClose, onSaved }: {
-  open: boolean; current: ProjectSettings; pendingExists: boolean; onClose: () => void; onSaved: (r: { version: number | null; proposal: number | null }) => void
+function SettingsForm({ open, current, onClose, onSaved }: {
+  open: boolean; current: ProjectSettings; pendingExists?: boolean; onClose: () => void; onSaved: (r: { version: number | null; proposal: number | null }) => void
 }) {
   const [f, setF] = useState<FormState>(() => toForm(current))
   const [reason, setReason] = useState('')
@@ -286,7 +284,6 @@ function SettingsForm({ open, current, pendingExists, onClose, onSaved }: {
 
   const { s, errors } = useMemo(() => fromForm(f), [f])
   const changes = useMemo(() => (Object.keys(errors).length ? [] : diffSettings(toDb(current), toDb(s))), [current, s, errors])
-  const financial = changes.filter((c) => c.financial)
   const set = (k: keyof FormState) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
   const err = (k: keyof ProjectSettings) => (tried ? errors[k] : undefined)
 
@@ -295,7 +292,6 @@ function SettingsForm({ open, current, pendingExists, onClose, onSaved }: {
     setTried(true)
     if (Object.keys(errors).length) { setError('Corrija os campos marcados.'); return }
     if (!changes.length) { setError('Nada foi alterado.'); return }
-    if (financial.length && pendingExists) { setError('Já existe uma mudança de regra aguardando o professor. Cancele-a ou espere a decisão antes de propor outra.'); return }
     if (reason.trim().length < 3) { setError('Explique o motivo da alteração.'); return }
     setBusy(true); setError(null)
     try { onSaved(await proposeSettings(s, reason)) }
@@ -303,18 +299,18 @@ function SettingsForm({ open, current, pendingExists, onClose, onSaved }: {
     finally { setBusy(false) }
   }
 
-  const L = ({ k, children }: { k: DbKey; children: string }) => (
-    <span className="inline-flex items-center gap-1.5">{children}{FINANCIAL_KEYS.includes(k) && <Tooltip content="Muda só com aprovação do professor"><Lock size={12} className="text-faint" aria-label="exige aprovação" /></Tooltip>}</span>
+  const L = ({ children }: { k: DbKey; children: string }) => (
+    <span className="inline-flex items-center gap-1.5">{children}</span>
   )
 
   return (
     <Modal wide open={open} onClose={onClose} title="Editar configurações"
-      description="Mudanças em campos com cadeado vão para aprovação do professor. As demais valem na hora."
+      description="As mudanças valem na hora e ficam no histórico. Regras financeiras mexem nas parcelas futuras ainda sem pagamento quando você gerar as parcelas de novo."
       footer={<>
         {error && <p role="alert" className="mr-auto text-sm text-bad">{error}</p>}
         <Button variant="ghost" onClick={onClose}>Cancelar</Button>
         <Button variant="primary" type="submit" form="settings-form" loading={busy}>
-          {financial.length && financial.length === changes.length ? 'Enviar para aprovação' : 'Salvar'}
+          Salvar
         </Button>
       </>}>
       <form id="settings-form" onSubmit={submit} className="space-y-7">
@@ -344,7 +340,7 @@ function SettingsForm({ open, current, pendingExists, onClose, onSaved }: {
           <Field label={<L k="devolucao_desistencia_bp">Devolução na desistência (%)</L>} error={err('refundOnWithdrawal')}>{(id) => <Input id={id} inputMode="decimal" value={f.refundOnWithdrawal} onChange={set('refundOnWithdrawal')} />}</Field>
           <div className="sm:col-span-3 space-y-3 pt-1">
             <Check label={<L k="novos_pagam_anteriores">Quem entra depois paga as parcelas que já venceram</L>} checked={f.newJoinersPayPast} onChange={(e) => setF({ ...f, newJoinersPayPast: e.target.checked })} />
-            <Check label={<L k="provisorio">Regras ainda provisórias</L>} hint="Desmarque quando as regras forem definitivas. Parcelas só podem ser geradas com regras aprovadas."
+            <Check label={<L k="provisorio">Regras ainda provisórias</L>} hint="Desmarque quando as regras forem definitivas. Parcelas só podem ser geradas com regras definitivas."
               checked={f.provisional} onChange={(e) => setF({ ...f, provisional: e.target.checked })} />
           </div>
         </fieldset>
@@ -363,7 +359,7 @@ function SettingsForm({ open, current, pendingExists, onClose, onSaved }: {
               {changes.map((c) => (
                 <li key={c.key} className="flex flex-wrap items-center gap-x-2 num">
                   <span className="text-muted">{LABELS[c.key]}:</span> {formatSettingValue(c.key, c.from)} → <b className="font-medium">{formatSettingValue(c.key, c.to)}</b>
-                  {c.financial ? <Badge tone="gold">Aguarda professor</Badge> : <Badge tone="ok">Na hora</Badge>}
+                  {c.financial && <Badge tone="gold">Regra financeira</Badge>}
                 </li>
               ))}
             </ul>

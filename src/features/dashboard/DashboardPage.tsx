@@ -23,10 +23,10 @@ import { ParticipationRing } from './ParticipationRing'
 
 // Tudo que é "realizado" vem do banco. Sem lançamento = zero. Nunca inventar números.
 const NEXT_STEPS: { label: string; detail: string; to: RouteId }[] = [
-  { label: 'Revisar regras com o professor', detail: 'Mensalidade, atraso e desistência', to: 'configuracoes' },
+  { label: 'Fechar as regras', detail: 'Mensalidade, atraso e desistência', to: 'configuracoes' },
   { label: 'Publicar o regulamento', detail: 'Base para a adesão dos alunos', to: 'documentos' },
   { label: 'Cadastrar os alunos', detail: 'Com o responsável de cada um', to: 'alunos' },
-  { label: 'Gerar as mensalidades', detail: 'A partir das regras aprovadas', to: 'mensalidades' },
+  { label: 'Gerar as mensalidades', detail: 'A partir das regras definitivas', to: 'mensalidades' },
   { label: 'Pedir propostas às agências', detail: 'Mesmo escopo para comparar', to: 'agencias' },
 ]
 
@@ -70,7 +70,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (r: RouteId) => void
 
   const pendings = [
     { icon: FileWarning, label: regulationPublished ? 'Regulamento publicado' : 'Regulamento ainda não publicado', to: 'documentos' as RouteId, active: connected && !docs.loading && !regulationPublished },
-    { icon: ShieldAlert, label: s.provisional ? 'Regras ainda provisórias' : 'Regras aprovadas pelo professor', to: 'configuracoes' as RouteId, active: s.provisional },
+    { icon: ShieldAlert, label: s.provisional ? 'Regras ainda provisórias' : 'Regras definitivas', to: 'configuracoes' as RouteId, active: s.provisional },
     ...(gestao ? [
       { icon: CircleDollarSign, label: `${late.lateCount} ${late.lateCount === 1 ? 'mensalidade' : 'mensalidades'} em atraso`, to: 'mensalidades' as RouteId, active: late.lateCount > 0 },
       { icon: Receipt, label: `${noReceipt} ${noReceipt === 1 ? 'despesa' : 'despesas'} sem comprovante`, to: 'despesas' as RouteId, active: noReceipt > 0 },

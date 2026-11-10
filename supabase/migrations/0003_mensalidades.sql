@@ -131,7 +131,7 @@ end $$;
 
 -- ---------------------------------------------------------------- geração das parcelas
 -- Cria as parcelas que faltam para cada aluno ativo e atualiza as FUTURAS que ainda não receberam
--- nenhum pagamento (ex.: o professor aprovou outro valor). Parcelas vencidas ou com pagamento
+-- nenhum pagamento (ex.: a mensalidade mudou). Parcelas vencidas ou com pagamento
 -- nunca mudam. Retorna {"criadas", "atualizadas", "removidas"}.
 create or replace function public.sincronizar_parcelas()
 returns jsonb language plpgsql security definer set search_path = public as $$
@@ -151,7 +151,7 @@ begin
   if not public.e_admin() then raise exception 'Sem permissão' using errcode = '42501'; end if;
   select valores, id into cfg, versao from public.config_versions order by id desc limit 1;
   if (cfg->>'provisorio')::boolean then
-    raise exception 'As regras ainda estão marcadas como provisórias. O professor precisa aprovar as regras definitivas em Configurações antes de gerar as parcelas.';
+    raise exception 'As regras ainda estão marcadas como provisórias. Desmarque "Regras ainda provisórias" em Configurações antes de gerar as parcelas.';
   end if;
   if cfg->>'mes_inicio' is null then raise exception 'Defina o mês da primeira parcela em Configurações'; end if;
   inicio := to_date(cfg->>'mes_inicio' || '-01', 'YYYY-MM-DD');

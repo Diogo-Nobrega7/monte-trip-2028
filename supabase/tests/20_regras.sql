@@ -23,34 +23,16 @@ select t.ok(public.configuracao_vigente()->>'destino' = 'Fortaleza', 'configura�
 select t.ok((select alteracoes->'destino'->>'de' from public.config_versions order by id desc limit 1) = 'Beach Park', 'histórico guarda o valor anterior');
 select t.ok((select alterado_por from public.config_versions order by id desc limit 1) = 'a0000000-0000-0000-0000-000000000001', 'histórico guarda o autor');
 
--- mudança financeira vira proposta; geral no mesmo envio entra na hora
+-- mudança financeira também entra na hora (o admin tem todo o poder; professor só lê)
 select (public.propor_configuracoes(public.configuracao_vigente() - '_versao' - '_alterado_em'
   || jsonb_build_object('mensalidade', 12000, 'provisorio', false, 'origem', 'Natal',
        'mes_inicio', to_char(current_date - interval '2 months', 'YYYY-MM')), 'Regras finais combinadas na reunião')) as r \gset
-select t.ok(:'r'::jsonb->>'proposta' is not null, 'mudança de mensalidade vira proposta pendente');
-select t.ok((public.configuracao_vigente()->>'mensalidade')::int = 10000, 'mensalidade antiga continua valendo até a aprovação');
-select t.ok(public.configuracao_vigente()->>'origem' = 'Natal', 'campo geral do mesmo envio entra na hora');
-select t.falha($$select public.propor_configuracoes(public.configuracao_vigente() - '_versao' - '_alterado_em' || '{"parcelas": 12}', 'outra')$$, 'só uma proposta pendente por vez', 'aguardando');
-select t.falha($$select public.decidir_proposta((select id from public.config_proposals where status = 'pendente'), true)$$, 'admin não aprova a própria proposta', 'professor');
-select t.falha($$select public.sincronizar_parcelas()$$, 'parcelas não são geradas com regras provisórias', 'provisórias');
-
--- professor aprova
+select t.ok(:'r'::jsonb->'proposta' = 'null' and (public.configuracao_vigente()->>'mensalidade')::int = 12000, 'admin muda a mensalidade e ela vale na hora');
+select t.ok((public.configuracao_vigente()->>'provisorio')::boolean = false and public.configuracao_vigente()->>'origem' = 'Natal', 'regras definitivas e campos gerais no mesmo envio');
+select t.ok((select alteracoes->'mensalidade'->>'de' from public.config_versions order by id desc limit 1) = '10000', 'histórico guarda a mensalidade anterior');
+select t.ok((select count(*) from public.config_proposals) = 0, 'nenhuma proposta pendente é criada');
 :prof
-select public.decidir_proposta((select id from public.config_proposals where status = 'pendente'), true, 'Aprovado em reunião') \gset
-select t.ok((public.configuracao_vigente()->>'mensalidade')::int = 12000, 'aprovação do professor põe a nova mensalidade em vigor');
-select t.ok((public.configuracao_vigente()->>'provisorio')::boolean = false, 'regras deixam de ser provisórias');
-select t.ok(public.configuracao_vigente()->>'origem' = 'Natal' and public.configuracao_vigente()->>'destino' = 'Fortaleza', 'aprovação preserva mudanças gerais feitas depois da proposta');
-select t.ok((select aprovado_por from public.config_versions order by id desc limit 1) = 'b0000000-0000-0000-0000-000000000002', 'versão aprovada registra quem aprovou');
-select t.ok((select status from public.config_proposals order by id desc limit 1) = 'aprovada', 'proposta fica como aprovada');
-select t.falha($$select public.decidir_proposta((select max(id) from public.config_proposals), true)$$, 'proposta não é decidida duas vezes', 'já foi decidida');
-
--- proposta antiga que ficou desatualizada não é aprovada
-:admin
-select public.propor_configuracoes(public.configuracao_vigente() - '_versao' - '_alterado_em' || '{"devolucao_desistencia_bp": 7000}', 'Teste de rejeição') \gset
-:prof
-select public.decidir_proposta((select id from public.config_proposals where status = 'pendente'), false, 'Manter 80%') \gset
-select t.ok((public.configuracao_vigente()->>'devolucao_desistencia_bp')::int = 8000, 'proposta rejeitada não muda nada');
-select t.ok((select observacao_decisao from public.config_proposals order by id desc limit 1) = 'Manter 80%', 'rejeição guarda a observação do professor');
+select t.falha($$select public.propor_configuracoes(public.configuracao_vigente() - '_versao' - '_alterado_em' || '{"parcelas": 12}', 'x')$$, 'professor não altera configurações', 'administração');
 
 -- ================================================================ geração de parcelas
 :admin
@@ -62,11 +44,8 @@ select t.ok((select vencimento from public.installments where numero = 18) = (da
 select public.sincronizar_parcelas() as g \gset
 select t.ok(:'g'::jsonb = '{"criadas": 0, "removidas": 0, "atualizadas": 0}', 'gerar de novo não duplica nada');
 
--- professor aprova nova mensalidade: só parcelas futuras sem pagamento mudam
+-- nova mensalidade: só parcelas futuras sem pagamento mudam
 select public.propor_configuracoes(public.configuracao_vigente() - '_versao' - '_alterado_em' || '{"mensalidade": 13000, "parcelas": 16}', 'Reajuste') \gset
-:prof
-select public.decidir_proposta((select id from public.config_proposals where status = 'pendente'), true) \gset
-:admin
 select public.sincronizar_parcelas() as g \gset
 select t.ok((:'g'::jsonb->>'removidas')::int = 2, 'reduzir para 16 parcelas remove as 2 últimas (sem pagamento)');
 select t.ok((select valor from public.installments where numero = 1) = 12000, 'parcela vencida não muda de valor');
