@@ -5,6 +5,9 @@ import { PeriodFilter } from '@/components/patterns/PeriodFilter'
 import { ReverseModal } from '@/components/patterns/ReverseModal'
 import { AuditModal } from '@/components/patterns/AuditModal'
 import { AttachModal, FilePicker } from '@/components/patterns/AttachModal'
+import { CheckCell } from '@/components/patterns/CheckCell'
+import { listChecks, type CheckRow } from '@/data/checks'
+import { listProfileNames } from '@/data/settings'
 import { Badge, Button, Field, Input, Modal, Select, Textarea, useToast } from '@/components/ui'
 import { useAuth } from '@/data/auth'
 import { connected } from '@/data/supabase'
@@ -26,6 +29,8 @@ export function ExpensesPage() {
   const enabled = connected && canReadAll
   const expenses = useRemote(listExpenses, enabled, [])
   const docs = useRemote(listDocuments, enabled, [])
+  const checks = useRemote(listChecks, enabled, { available: false, rows: [] as CheckRow[] })
+  const names = useRemote(listProfileNames, enabled, new Map<string, string>())
   const [period, setPeriod] = useState<PeriodPreset>('tudo')
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
@@ -41,6 +46,11 @@ export function ExpensesPage() {
     return expenses.data.map((e) => ({ ...e, reversed: rev.has(e.id), receipts: byExp.get(e.id) ?? [] }))
   }, [expenses.data, docs.data])
   const rows = all.filter((r) => inRange(r.date, presetRange(period, now)))
+  const checksBy = useMemo(() => {
+    const m = new Map<string, CheckRow[]>()
+    for (const c of checks.data.rows) if (c.table === 'expenses') m.set(c.recordId, [...(m.get(c.recordId) ?? []), c])
+    return m
+  }, [checks.data.rows])
   const total = (list: Row[]) => list.reduce((s, r) => s + r.amount, 0)
   // sem comprovante: despesas válidas (não estornadas, não estornos) sem arquivo
   const missing = all.filter((r) => !r.reversalOf && !r.reversed && !r.receipts.length)
@@ -65,10 +75,10 @@ export function ExpensesPage() {
           { icon: ListOrdered, label: 'Lançamentos', value: rows.filter((r) => !r.reversalOf).length },
         ]}
         extra={<PeriodFilter value={period} onChange={setPeriod} />}
-        searchPlaceholder="Buscar despesa" filters={['Todas', 'Sem comprovante', 'Estornos', ...Object.values(CATEGORY_LABEL)]}
+        searchPlaceholder="Buscar despesa" filters={['Todas', 'Sem comprovante', ...(checks.data.available ? ['A conferir'] : []), 'Estornos', ...Object.values(CATEGORY_LABEL)]}
         rows={rows} rowKey={(r) => r.id}
         matches={(r, q, f) => (!q || `${r.description} ${r.justification}`.toLowerCase().includes(q))
-          && (f === 'Todas' || (f === 'Sem comprovante' ? missing.includes(r) : f === 'Estornos' ? !!r.reversalOf || r.reversed : CATEGORY_LABEL[r.category] === f))}
+          && (f === 'Todas' || (f === 'Sem comprovante' ? missing.includes(r) : f === 'A conferir' ? checksBy.get(r.id)?.at(-1)?.status !== 'conferido' : f === 'Estornos' ? !!r.reversalOf || r.reversed : CATEGORY_LABEL[r.category] === f))}
         columns={[
           { key: 'desc', header: 'Descrição', primary: true, render: (r) => (
             <span><span className="font-medium">{r.description}</span><span className="block text-xs text-faint font-normal max-w-[28ch] truncate" title={r.justification}>{r.justification}</span></span>
@@ -82,6 +92,10 @@ export function ExpensesPage() {
             : isAdmin && !r.reversed ? <Button size="sm" variant="ghost" icon={Paperclip} onClick={() => setAttaching(r)}>Anexar</Button>
             : <Badge dot tone="warn">Pendente</Badge>
           ) },
+          ...(checks.data.available ? [{ key: 'check', header: 'Conferência', render: (r: Row) => (
+            <CheckCell table="expenses" recordId={r.id} history={checksBy.get(r.id) ?? []} names={names.data} canCheck={canReadAll}
+              summary={<>{r.description}, {money(r.amount)} em {dateBR(r.date)}.</>} onSaved={() => { checks.reload(); toast('Conferência registrada') }} />
+          ) }] : []),
           { key: 'amount', header: 'Valor', align: 'right', render: (r) => <span className={r.amount < 0 ? 'text-ok' : ''}>{money(r.amount)}</span> },
           { key: 'act', header: 'Situação', render: (r) => (
             <span className="inline-flex items-center gap-1">

@@ -19,7 +19,7 @@ const map = new Map()
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--usuario') { const [a, n] = (args[++i] ?? '').split('='); if (!a || !n) { console.error('Use --usuario antigo=novo'); process.exit(1) } map.set(a, n) }
 }
-const USER_COLS = new Set(['criado_por', 'registrado_por', 'alterado_por', 'aprovado_por', 'proposto_por', 'decidido_por', 'enviado_por', 'excluido_por', 'usuario'])
+const USER_COLS = new Set(['conferido_por', 'criado_por', 'registrado_por', 'alterado_por', 'aprovado_por', 'proposto_por', 'decidido_por', 'enviado_por', 'excluido_por', 'usuario'])
 
 const lit = (v) => {
   if (v === null || v === undefined) return 'null'
@@ -63,8 +63,10 @@ insert('yields', originalsFirst(t.yields))
 insert('agencies', t.agencies)
 insert('proposals', t.proposals)
 insert('documents', t.documents)
+insert('conferencias', t.conferencias, { identity: true })
+insert('saldos_bancarios', t.saldos_bancarios)
 insert('audit_log', t.audit_log, { identity: true })
-for (const [table, col] of [['config_versions', 'id'], ['config_proposals', 'id'], ['audit_log', 'id']]) {
+for (const [table, col] of [['config_versions', 'id'], ['config_proposals', 'id'], ['conferencias', 'id'], ['audit_log', 'id']]) {
   out.push(`select setval(pg_get_serial_sequence('public.${table}', '${col}'), coalesce((select max(${col}) from public.${table}), 1));`)
 }
 out.push('commit;')

@@ -26,7 +26,7 @@ Tempo total: uns 20 minutos, uma vez só.
    `supabase/migrations/0001_inicial.sql`, copie tudo, cole e clique **Run**.
    Deve aparecer "Success. No rows returned".
    Repita, **um arquivo por vez e nesta ordem**, com `0002_configuracoes.sql`, `0003_mensalidades.sql`,
-   `0004_caixa.sql`, `0005_agencias.sql`, `0006_documentos.sql` e `0007_resumo_publico.sql`.
+   `0004_caixa.sql`, `0005_agencias.sql`, `0006_documentos.sql`, `0007_resumo_publico.sql` e `0008_conferencia.sql`.
    (Projeto que já rodou a 0001: comece na 0002. Rode cada arquivo uma vez só.)
 5. **Bloquear cadastro aberto:** menu **Authentication** → **Sign In / Providers** (ou *Providers*)
    → em **Email**, desligue **Allow new users to sign up** e salve.

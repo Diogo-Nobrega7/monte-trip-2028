@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { AlertTriangle, CalendarClock, CircleCheck, HandCoins, History, ListChecks, RefreshCw, Undo2, Users, Wallet } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CircleCheck, FileText, HandCoins, History, ListChecks, RefreshCw, Undo2, Users, Wallet } from 'lucide-react'
 import { PageHeader, Segmented, StageNotice, Badge, Button, Field, Input, Modal, Select, useToast, type Column, type Tone } from '@/components/ui'
 import { StatRow } from '@/components/patterns/StatRow'
 import { TableCard } from '@/components/patterns/TableCard'
 import { ReverseModal } from '@/components/patterns/ReverseModal'
+import { CheckCell } from '@/components/patterns/CheckCell'
+import { listChecks, type CheckRow } from '@/data/checks'
+import { listProfileNames } from '@/data/settings'
+import { printReceipt } from '../reports/print'
 import { useSettingsState } from '@/app/SettingsContext'
 import { useAuth } from '@/data/auth'
 import { connected } from '@/data/supabase'
@@ -37,6 +41,8 @@ export function InstallmentsPage() {
   const enabled = connected && canReadAll
   const students = useRemote(listStudents, enabled, [])
   const payments = useRemote(listPayments, enabled, [])
+  const checks = useRemote(listChecks, enabled, { available: false, rows: [] as CheckRow[] })
+  const names = useRemote(listProfileNames, enabled, new Map<string, string>())
   const installments = useRemote(listInstallments, enabled, [])
   const [tab, setTab] = useState('Parcelas')
   const [paying, setPaying] = useState<{ studentId?: string; installmentId?: string } | null>(null)
@@ -92,6 +98,21 @@ export function InstallmentsPage() {
     ) },
   ]
 
+  const checksBy = useMemo(() => {
+    const m = new Map<string, CheckRow[]>()
+    for (const c of checks.data.rows) if (c.table === 'payments') m.set(c.recordId, [...(m.get(c.recordId) ?? []), c])
+    return m
+  }, [checks.data.rows])
+  function receipt(r: PayRow) {
+    const inst = r.installmentId ? instById.get(r.installmentId) : undefined
+    try {
+      printReceipt({
+        id: r.id, studentName: r.studentName, guardianName: studentById.get(r.studentId)?.guardianName ?? null, amount: r.amount, paidAt: r.paidAt,
+        method: METHOD_LABEL[r.method], note: r.note, createdAt: r.createdAt, admin: s.admin,
+        reference: inst ? `parcela ${inst.number}/${inst.total} da contribuição para a viagem (vencimento ${dateBR(inst.dueDate)})` : 'contribuição para a viagem de formatura',
+      })
+    } catch (e) { toast((e as Error).message, 'error') }
+  }
   const payColumns: Column<PayRow>[] = [
     { key: 'student', header: 'Aluno', primary: true, render: (r) => <span className="font-medium">{r.studentName}</span> },
     { key: 'date', header: 'Data', render: (r) => dateBR(r.paidAt) },
@@ -99,10 +120,15 @@ export function InstallmentsPage() {
     { key: 'amount', header: 'Valor', align: 'right', render: (r) => <span className={r.amount < 0 ? 'text-bad' : ''}>{money(r.amount)}</span> },
     { key: 'method', header: 'Forma', hideOnMobile: true, render: (r) => METHOD_LABEL[r.method] },
     { key: 'note', header: 'Observação', hideOnMobile: true, render: (r) => <span className="text-muted">{r.note ?? ''}</span> },
+    ...(checks.data.available ? [{ key: 'check', header: 'Conferência', render: (r: PayRow) => (
+      <CheckCell table="payments" recordId={r.id} history={checksBy.get(r.id) ?? []} names={names.data} canCheck={canReadAll}
+        summary={<>{r.studentName}, {money(r.amount)} em {dateBR(r.paidAt)}.</>} onSaved={() => { checks.reload(); toast('Conferência registrada') }} />
+    ) }] : []),
     { key: 'status', header: 'Situação', render: (r) => (
       r.reversalOf ? <Badge tone="bad">Estorno</Badge>
       : r.reversed ? <Badge tone="neutral">Estornado</Badge>
-      : <span className="inline-flex items-center gap-2"><Badge dot tone="ok">Recebido</Badge>
+      : <span className="inline-flex items-center gap-1"><Badge dot tone="ok">Recebido</Badge>
+          <Button size="sm" variant="ghost" icon={FileText} onClick={() => receipt(r)}>Recibo</Button>
           {isAdmin && <Button size="sm" variant="ghost" icon={Undo2} onClick={() => setReversing(r)}>Estornar</Button>}</span>
     ) },
   ]
@@ -160,9 +186,9 @@ export function InstallmentsPage() {
         empty={{ icon: CalendarClock, title: 'Nenhuma parcela gerada', text: 'Com as regras definitivas e o mês de início definido, use "Gerar parcelas".' }} />}
 
       {tab === 'Pagamentos' && <TableCard columns={payColumns} rows={payRows} rowKey={(r) => r.id} loading={loading} error={error}
-        searchPlaceholder="Buscar aluno" filters={['Todos', 'Pix', 'Transferência', 'Dinheiro', 'Estornos']}
+        searchPlaceholder="Buscar aluno" filters={['Todos', 'Pix', 'Transferência', 'Dinheiro', 'Estornos', ...(checks.data.available ? ['A conferir'] : [])]}
         matches={(r, q, f) => (!q || r.studentName.toLowerCase().includes(q))
-          && (f === 'Todos' || (f === 'Estornos' ? !!r.reversalOf || r.reversed : METHOD_LABEL[r.method] === f))}
+          && (f === 'Todos' || (f === 'Estornos' ? !!r.reversalOf || r.reversed : f === 'A conferir' ? checksBy.get(r.id)?.at(-1)?.status !== 'conferido' : METHOD_LABEL[r.method] === f))}
         empty={{ icon: HandCoins, title: 'Nenhum pagamento registrado', text: 'Cadastre os alunos primeiro. Depois, cada dinheiro recebido vira um lançamento aqui.' }} />}
 
       {tab === 'Por aluno' && <TableCard columns={studentColumns} rows={byStudent} rowKey={(r) => r.id} loading={loading} error={error}
