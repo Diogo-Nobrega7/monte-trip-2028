@@ -20,7 +20,7 @@ A interface só esconde botões. Quem bloqueia é o banco (RLS, revoke e funçõ
 | Papel | Acesso |
 |---|---|
 | admin (Davi) | grava e altera tudo, inclusive regras financeiras (valem na hora, com histórico) |
-| supervisor (professor) | só leitura de tudo |
+| supervisor (professor) | lê tudo; só grava conferências de lançamentos |
 | visitante (sem login) | só totais (`resumo_publico`, `resumo_publico_mensal`), configuração vigente e documentos públicos |
 | responsavel, aluno | previstos no banco; área própria ainda não implementada |
 
@@ -35,6 +35,7 @@ Valores em `bigint` (centavos). Percentuais em pontos-base (1500 = 15%).
 | 0004 | `fundraisings` + `fundraising_entries` (receita/custo, imutável), `expenses` (imutável, só textos corrigíveis), `yields`; visão `livro_caixa`; `registrar_arrecadacao()` |
 | 0005 | `agencies`, `proposals` (editáveis com auditoria, descartar em vez de apagar); `cnpj_valido()` |
 | 0006 | bucket `documentos`, `documents` (exclusão lógica com motivo), políticas do Storage; `excluir_documento()` |
+| 0008 | `conferencias` (conferência de lançamentos, só acrescenta), `saldos_bancarios` (saldo do extrato informado); revoga execução de funções internas pela API |
 | 0007 | `resumo_publico()` ampliado (saldo, despesas, rendimentos), `resumo_publico_mensal()`, visão `parcelas_situacao` |
 
 ## Regras e garantias
@@ -58,6 +59,6 @@ Valores em `bigint` (centavos). Percentuais em pontos-base (1500 = 15%).
 
 ## Testes
 - `npm test`: cálculos (parcelas, configurações, livro-caixa, CSV, importação, CNPJ, propostas, juros).
-- `scripts/db-test.sh`: migrações + 119 verificações de permissão e de regra num Postgres local que imita o Supabase.
+- `scripts/db-test.sh`: migrações + 136 verificações de permissão e de regra num Postgres local que imita o Supabase.
 - `scripts/e2e/`: Storage e PostgREST oficiais (Docker) + login de teste; navegador faz o fluxo completo (55 verificações).
 - `scripts/smoke.mjs`: telas em modo demonstração (sem banco).

@@ -59,7 +59,7 @@ src/
   hooks/        useHashRoute, useTheme
   lib/          funções puras com testes: finance, installments, settings, ledger, period, csv, import, proposals, cnpj, payments
   types/        domain.ts
-supabase/migrations  0001–0007 (rodar em ordem no SQL Editor)
+supabase/migrations  0001–0008 (rodar em ordem no SQL Editor)
 supabase/tests       Supabase de mentira + testes de RLS e regras (scripts/db-test.sh)
 scripts/e2e          ambiente local com Storage/PostgREST oficiais + teste de navegador
 ```
@@ -87,7 +87,9 @@ Etapas 1 a 6 implementadas no ramo `claude/sistema-completo`: configurações co
 na hora; professor só lê — decisão do usuário em 2026-11-10),
 mensalidades (parcelas, parcial, atraso, distribuição, estorno), arrecadações, despesas com comprovante, rendimentos,
 documentos no Storage, agências com comparação, prestação de contas (CSV/PDF), importação de alunos e backup.
-Testes: 101 unitários, 119 de banco, 55 de ponta a ponta (rodado antes da mudança do professor; refazer). Detalhes: docs/PROGRESSO.md.
+Refinamento (2026-11-11): conferência de lançamentos, saldo do extrato × registrado, fechamento mensal (PDF),
+recibo de pagamento (PDF), revisão de segurança (docs/SEGURANCA.md). Telas funcionam sem a 0008 (escondem a conferência).
+Testes: 107 unitários, 136 de banco; e2e completo de 55 itens é anterior à mudança do professor (refazer). Detalhes: docs/PROGRESSO.md.
 Publicação e configuração do Supabase: docs/PUBLICAR.md. Backup: docs/BACKUP.md.
 Apresentação institucional (8 slides, HTML puro): public/apresentacao/index.html → publicada em `/apresentacao/`.
 Telas em public/apresentacao/img são capturas reais com dados fictícios (ambiente scripts/e2e); foto da capa
@@ -107,8 +109,7 @@ Etapas 1 e 1.5 feitas no claude.ai (chat). Versão publicada lá como página es
 A partir daqui o desenvolvimento segue no Claude Code, neste repositório.
 
 ## Próxima sessão
-1. Confirmar que as migrações 0002–0007 rodaram no Supabase real; depois
-   juntar o ramo na main (banco primeiro, site depois — docs/PUBLICAR.md).
+1. Confirmar que a migração 0008 rodou no Supabase real (0002–0007 já rodaram em 2026-11-10).
 2. Conferir no site real: mudança de regra, geração de parcelas, envio de comprovante.
    O teste e2e (scripts/e2e/e2e.cjs) ainda tem o passo do professor aprovando: atualizar.
 3. Pendências de produto: área do participante, aprovação de despesas acima de limite, dispensa de adicional.

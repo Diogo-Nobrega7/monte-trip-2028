@@ -23,6 +23,9 @@ import { PERIOD_LABEL, inRange, presetRange, rangeLabel, type PeriodPreset, type
 import { monthLabel } from '@/lib/settings'
 import { scenario } from '@/lib/finance'
 import { printReport } from './printReport'
+import { BalancesCard, MonthClosingCard } from './Closing'
+import { checkedLedgerKeys, listBankBalances, listChecks, type BankBalance, type CheckRow } from '@/data/checks'
+import { listDocuments } from '@/data/documents'
 
 type Entry = LedgerEntry & { reference: string | null; createdAt: string }
 const STATUS_LABEL = { paga: 'Paga', parcial: 'Parcial', pendente: 'A vencer', atrasada: 'Atrasada' }
@@ -37,6 +40,11 @@ export function ReportsPage() {
   const students = useRemote(listStudents, enabled, [])
   const expenses = useRemote(listExpenses, enabled, [])
   const yields = useRemote(listYields, enabled, [])
+  const installments = useRemote(listInstallments, enabled, [])
+  const payments = useRemote(listPayments, enabled, [])
+  const docs = useRemote(listDocuments, enabled, [])
+  const checks = useRemote(listChecks, enabled, { available: false, rows: [] as CheckRow[] })
+  const bank = useRemote(listBankBalances, enabled, { available: false, rows: [] as BankBalance[] })
   const publicSummary = useRemote(getPublicSummary, connected && !canReadAll, null)
   const publicMonthly = useRemote(getPublicMonthly, connected && !canReadAll, [])
   const [preset, setPreset] = useState<PeriodPreset | 'custom'>('tudo')
@@ -60,6 +68,13 @@ export function ReportsPage() {
   const series = monthlySeries(ledger.data.filter((e) => inRange(e.date, range)))
   const sc = scenario({ monthly: s.monthlyFee, months: s.months, annualRate: s.annualRate, students: s.expectedStudents, budgetPerStudent: s.budgetPerStudent })
   const projectionText = `com ${s.expectedStudents} participantes pagando ${money(s.monthlyFee)} por ${s.months} meses a ${percent(s.annualRate)} ao ano, o saldo chegaria a ${moneyShort(sc.groupBalance)} contra uma meta de ${moneyShort(sc.groupBudget)}. Rendimento não garantido e orçamento ainda não cotado.`
+
+  const closingInput = useMemo(() => ({
+    ledger: ledger.data, installments: installments.data, payments: payments.data,
+    activeStudentIds: new Set(students.data.filter((st) => st.status === 'ativo').map((st) => st.id)),
+    expenses: expenses.data, expenseIdsWithReceipt: new Set(docs.data.filter((d) => d.expenseId && !d.deletedAt).map((d) => d.expenseId!)),
+    checkedKeys: checkedLedgerKeys(checks.data.rows),
+  }), [ledger.data, installments.data, payments.data, students.data, expenses.data, docs.data, checks.data.rows])
 
   async function exportCsv(kind: string) {
     setExporting(kind)
@@ -118,6 +133,10 @@ export function ReportsPage() {
           <Button variant="primary" icon={Printer} onClick={pdf} disabled={loading}>Gerar PDF</Button>
         </>} />
 
+      <div className="mb-6"><BalancesCard ledger={ledger.data} bank={bank.data.rows[0] ?? null} bankAvailable={bank.data.available}
+        yields={yields.data.reduce((a, y) => a + y.amount, 0)} projection={{ balance: sc.groupBalance, goal: sc.groupBudget }}
+        canInform={isAdmin} onInformed={() => { bank.reload(); toast('Saldo do extrato registrado') }} /></div>
+
       <Card className="mb-6 p-4 flex flex-wrap items-end gap-3">
         <Field label="Período">{(id) => <Select id={id} value={preset} onChange={(e) => setPreset(e.target.value as PeriodPreset | 'custom')}>
           {(Object.keys(PERIOD_LABEL) as PeriodPreset[]).map((p) => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
@@ -170,6 +189,9 @@ export function ReportsPage() {
           </dl>
         </Card>
       </div>
+
+      <div className="mb-6"><MonthClosingCard input={closingInput} checksAvailable={checks.data.available} ledger={ledger.data}
+        generatedBy={name} onError={(m) => toast(m, 'error')} /></div>
 
       <Card className="mb-6 ring-gold/40">
         <CardHeader title={<span className="flex items-center gap-2">Projeção <Badge tone="gold">Ilustrativa</Badge></span>} hint="Não é dado real. Serve para comparar com o que de fato entrou." />

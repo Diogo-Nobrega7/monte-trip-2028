@@ -8,7 +8,7 @@ import { db, selectAll } from './db'
  */
 export const BACKUP_TABLES = [
   'profiles', 'config_versions', 'config_proposals', 'students', 'installments', 'payments',
-  'fundraisings', 'fundraising_entries', 'expenses', 'yields', 'agencies', 'proposals', 'documents', 'audit_log',
+  'fundraisings', 'fundraising_entries', 'expenses', 'yields', 'agencies', 'proposals', 'documents', 'conferencias', 'saldos_bancarios', 'audit_log',
 ] as const
 
 export interface Backup { formato: 'monte-trip-2028/backup'; versao: 1; gerado_em: string; tabelas: Record<string, unknown[]> }
@@ -17,7 +17,12 @@ export async function exportBackup(): Promise<Backup> {
   const tabelas: Record<string, unknown[]> = {}
   for (const t of BACKUP_TABLES) {
     // ordem estável: ids crescentes quando existem; audit_log e configs têm id numérico
-    tabelas[t] = await selectAll((a, b) => db().from(t).select('*').order('id').range(a, b))
+    try { tabelas[t] = await selectAll((a, b) => db().from(t).select('*').order('id').range(a, b)) }
+    catch (e) {
+      // tabelas da migração 0008 podem ainda não existir
+      if ((t === 'conferencias' || t === 'saldos_bancarios') && /schema cache|does not exist/i.test((e as Error).message)) tabelas[t] = []
+      else throw e
+    }
   }
   return { formato: 'monte-trip-2028/backup', versao: 1, gerado_em: new Date().toISOString(), tabelas }
 }

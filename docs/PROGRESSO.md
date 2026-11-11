@@ -104,6 +104,16 @@
 - No Supabase real (projeto `qhfwefqtgcuulukefvtk`): depende de rodar as migrações 0002–0007 (docs/PUBLICAR.md).
   O login do teste local é um substituto do Supabase Auth.
 
+## Refinamento (2026-11-11)
+- Conferência de pagamentos e despesas (conferido/divergente, quem e quando, histórico preservado; admin e professor).
+- Saldo do extrato informado × saldo registrado, com a diferença; rendimentos reais e projeção separados (Painel e Prestação de contas).
+- Fechamento mensal: saldo inicial/final, entradas, saídas, rendimentos, inadimplência no fim do mês, despesas sem
+  comprovante e lançamentos a conferir, com PDF (sem nomes de alunos).
+- Recibo de pagamento em PDF (aluno, responsável, valor, data, forma, parcela e código do lançamento).
+- Segurança: funções internas sem execução pela API, novas tabelas sem UPDATE/DELETE, backup e restauração incluem
+  as tabelas novas; docs/SEGURANCA.md.
+- Testes: 107 unitários, 136 de banco, roteiro de navegador do refinamento (19 itens) e telas sem a migração 0008.
+
 ## Próximas etapas
 - Área do participante (responsável vê só o próprio aluno: papéis `responsavel`/`aluno` já existem).
 - Aprovação de despesas acima de um limite pelo professor.

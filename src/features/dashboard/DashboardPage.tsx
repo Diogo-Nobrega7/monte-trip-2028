@@ -11,7 +11,9 @@ import { useAuth } from '@/data/auth'
 import { connected } from '@/data/supabase'
 import { getPublicMonthly, getPublicSummary, listPayments, type PublicSummary } from '@/data/repo'
 import { listInstallments } from '@/data/installments'
-import { listExpenses } from '@/data/cash'
+import { listExpenses, listLedger } from '@/data/cash'
+import { listBankBalances, type BankBalance } from '@/data/checks'
+import { BalancesCard } from '../reports/Closing'
 import { listDocuments } from '@/data/documents'
 import { listAgencies } from '@/data/agencies'
 import { useSettingsState } from '@/app/SettingsContext'
@@ -51,6 +53,8 @@ export function DashboardPage({ onNavigate }: { onNavigate: (r: RouteId) => void
   const payments = useRemote(listPayments, gestao, [])
   const expenses = useRemote(listExpenses, gestao, [])
   const agencies = useRemote(listAgencies, gestao, { agencies: [], proposals: [] })
+  const ledger = useRemote(listLedger, gestao, [])
+  const bank = useRemote(listBankBalances, gestao, { available: false, rows: [] as BankBalance[] })
   const now = today()
 
   const sum = summary.data
@@ -103,6 +107,9 @@ export function DashboardPage({ onNavigate }: { onNavigate: (r: RouteId) => void
         <Stat icon={Target} label="Falta arrecadar" value={moneyShort(Math.max(0, sc.groupBudget - balance))}
           tone="warn" note={`${moneyShort(s.budgetPerStudent)} por aluno`} info="Orçamento preliminar (por aluno × vagas estimadas) − saldo atual." />
       </Card>
+
+      {gestao && <BalancesCard ledger={ledger.data} bank={bank.data.rows[0] ?? null} bankAvailable={bank.data.available}
+        yields={ACTUAL.yield} projection={{ balance: sc.groupBalance, goal: sc.groupBudget }} canInform={auth.isAdmin} onInformed={bank.reload} />}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <Card>
