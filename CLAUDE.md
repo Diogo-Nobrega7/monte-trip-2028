@@ -18,6 +18,10 @@ Contexto, riscos e pendências das conversas iniciais: docs/CONTEXTO.md.
 - localStorage só para preferência visual (tema). Dados do sistema vão para o banco.
 - Movimentações financeiras são imutáveis: correção = estorno + novo lançamento.
 
+## Commits
+Sempre em nome do Diogo: autor e committer `Diogo Nóbrega <168549527+Diogo-Nobrega7@users.noreply.github.com>`,
+sem linhas de coautoria ou de sessão no fim da mensagem (pedido do dono do repositório, vale para todos os projetos dele).
+
 ## Stack
 - Vite 5 + React 18 + TypeScript (strict) + Tailwind 3
 - Recharts (gráficos), lucide-react (ícones)
