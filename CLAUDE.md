@@ -87,7 +87,7 @@ scripts/e2e          ambiente local com Storage/PostgREST oficiais + teste de na
 - Juros: taxa mensal equivalente (1+a)^(1/12)−1, depósitos postecipados. Validado contra a tabela do briefing.
 
 ## Estado atual (2026-11-10)
-Etapas 1 a 6 implementadas no ramo `claude/sistema-completo`: configurações com histórico (admin altera tudo,
+Etapas 1 a 6 implementadas no ramo `sistema-completo`: configurações com histórico (admin altera tudo,
 na hora; professor só lê — decisão do usuário em 2026-11-10),
 mensalidades (parcelas, parcial, atraso, distribuição, estorno), arrecadações, despesas com comprovante, rendimentos,
 documentos no Storage, agências com comparação, prestação de contas (CSV/PDF), importação de alunos e backup.
